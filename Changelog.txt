@@ -1,8 +1,13 @@
 to-do list
-- OPD Depan IP - http://10.77.235.225:5000/
+- OPD Depan Static IP - http://10.77.232.94:5000/
+
+Version 3.0 (20260113)
+- Added Reset/Restart Server button in staff panel
+- Fixed quick change counter shortcut key (Press + followed by number 1-5)
+- Updated silent notification to show callnumber and counter
 
 Version 2.9 (20251105)
-- Added live tv support with multiple channel (use arrow key to change channel) (local media as one of the channel)
+- Added live tv support with multiple channel (use arrow up/down/left/right key to change channel) (local media as one of the channel)
 - video autoplay with sound (50% volume)
 - video auto mute when calling number
 - Added link to display & dashboard from QMS Panel
