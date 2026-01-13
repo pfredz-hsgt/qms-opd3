@@ -674,6 +674,8 @@
         let terminalRecentCalls = [];
         let serverInfo = { ip: '', port: '' };
         let currentNotificationTimeout = null;
+        let isShortcutActive = false;
+        let shortcutTimeout = null;
 
         // Keypad elements
         const numberInput = document.getElementById("number-input-keypad");
@@ -996,6 +998,36 @@
 
         // Keyboard shortcuts
         document.addEventListener("keydown", function (event) {
+            // Handle active shortcut mode (+ has been pressed)
+            if (isShortcutActive) {
+                // If 1-5 is pressed, select counter
+                if (event.key >= '1' && event.key <= '5') {
+                    event.preventDefault();
+                    counterSelect.value = event.key;
+
+                    // Visual feedback for successful selection
+                    const label = document.querySelector("label[for='counter-select']");
+                    label.style.color = "#38a169"; // Green
+                    setTimeout(() => { label.style.color = ""; }, 500);
+                } else {
+                    // Any other key just cancels, providing feedback (revert color)
+                    const label = document.querySelector("label[for='counter-select']");
+                    label.style.color = "";
+                }
+
+                // Reset mode
+                isShortcutActive = false;
+                if (shortcutTimeout) {
+                    clearTimeout(shortcutTimeout);
+                    shortcutTimeout = null;
+                }
+
+                // If we handled a valid counter key, we stop here. 
+                // If it was invalid, we also stop here to prevent it from being entered as a ticket number
+                // (This matches user expectation: "+ then number" should handle counter or fail, not type number)
+                return;
+            }
+
             // Number keys
             if (event.key >= '0' && event.key <= '9' && numberInput.value.length < 5) {
                 numberInput.value += event.key;
@@ -1017,9 +1049,15 @@
             // Counter shortcuts (+ followed by number)
             else if (event.key === '+') {
                 event.preventDefault();
+                isShortcutActive = true;
                 const label = document.querySelector("label[for='counter-select']");
                 label.style.color = "#ed8936";
-                setTimeout(() => { label.style.color = ""; }, 1000);
+
+                if (shortcutTimeout) clearTimeout(shortcutTimeout);
+                shortcutTimeout = setTimeout(() => {
+                    isShortcutActive = false;
+                    label.style.color = "";
+                }, 1000);
             }
         });
 
