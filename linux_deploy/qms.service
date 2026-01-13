@@ -1,0 +1,30 @@
+[Unit]
+Description=QMS OPD Queue Management System
+After=network.target
+
+[Service]
+# User and Group to run the service
+# Replace 'qmsuser' with your actual username (e.g., 'ubuntu', 'www-data')
+User=ubuntu
+Group=ubuntu
+
+# Working Directory
+WorkingDirectory=/opt/qms-opd
+
+# Environment Variables
+Environment="PATH=/opt/qms-opd/venv/bin"
+Environment="PYTHONUNBUFFERED=1"
+Environment="SECRET_KEY=change_this_to_a_secure_random_string"
+Environment="LOGS_FOLDER=/opt/qms-opd/logs"
+Environment="CSV_FILENAME=call_logs.csv"
+
+# Start Command
+# Using gunicorn with the config file
+ExecStart=/opt/qms-opd/venv/bin/gunicorn --config linux_deploy/gunicorn_config.py app:app
+
+# Restart policy
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

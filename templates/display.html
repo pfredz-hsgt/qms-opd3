@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Queue Display</title>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f4f6f9;
+            color: #2c3e50;
+            overflow: hidden;
+        }
+
+        /* Start screen styles */
+        #start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        #start-button {
+            padding: 20px 40px;
+            font-size: 2.5rem;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            width: 100%;
+            height: 100%;
+        }
+
+        #start-button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .auto-start-info {
+            color: white;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        .countdown {
+            color: #f39c12;
+            font-weight: bold;
+        }
+
+        .kiosk-mode-indicator {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: #27ae60;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 1001;
+            display: none;
+        }
+
+        .kiosk-mode-indicator.active {
+            display: block;
+        }
+
+        /* Audio status indicator */
+        .audio-status {
+            position: fixed;
+            top: 50px;
+            right: 10px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+
+        .audio-enabled {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .audio-disabled {
+            background-color: #ff9800;
+            color: white;
+        }
+
+        .audio-failed {
+            background-color: #f44336;
+            color: white;
+        }
+
+        /* Main layout styles */
+        .layout {
+            display: flex;
+            height: 88vh;
+        }
+
+        .main-display {
+            flex: 2.5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .main-display h2 {
+            font-size: 3rem;
+            margin-bottom: 5px;
+        }
+
+        .current-call {
+            font-size: 10rem;
+            font-weight: bold;
+            color: #e74c3c;
+            margin-bottom: 20px;
+        }
+
+        .current-counter {
+            font-size: 5rem;
+            color: #2980b9;
+        }
+
+        .history {
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        .history h2 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+            color: #7f8c8d;
+        }
+
+        .history-item {
+            font-size: 2.5rem;
+            margin: 10px 0;
+            padding-right: 50px;
+        }
+
+        .number,
+        .counter {
+            display: inline-block;
+            width: 200px;
+        }
+
+        /* --- 🌟 CSS CHANGES START HERE --- */
+
+        .media-panel {
+            flex: 4;
+            background: #ffffff;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            /* Stack items vertically */
+            align-items: stretch;
+            /* Stretch items to fill width */
+            justify-content: flex-start;
+            /* Align to top */
+        }
+
+        /* Style the dropdown */
+        #channelSelect {
+            width: 100%;
+            padding: 8px;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+            /* Don't shrink dropdown */
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        /* Style the player container */
+        #player-container {
+            flex-grow: 1;
+            /* Fill remaining vertical space */
+            width: 100%;
+            background-color: #000;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+            /* To keep video corners rounded */
+            min-height: 200px;
+            /* Prevent it from collapsing */
+        }
+
+        /* Make the video fill the container */
+        .media-panel video {
+            width: 100%;
+            height: 100%;
+            /* Fill the container */
+            border: none;
+            /* Remove original border */
+            border-radius: 0;
+            /* Remove original radius */
+            object-fit: contain;
+        }
+
+        /* --- 🌟 CSS CHANGES END HERE --- */
+
+        .header h1 {
+            text-align: center;
+            vertical-align: middle;
+            background-color: rgb(0, 32, 70);
+            color: white;
+            width: 100vw;
+            height: 5vh;
+            margin: 0;
+            font-size: 2vw;
+            line-height: 5vh;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 25pt;
+            vertical-align: middle;
+            background-color: rgb(0, 32, 70);
+            color: white;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            height: 6vh;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .animate-call {
+            animation: pulse 1.4s ease-in-out;
+        }
+
+        /* Connection status styles */
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+
+        .status-connected {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .status-disconnected {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .status-connecting {
+            background-color: #ff9800;
+            color: white;
+        }
+
+        /* Visual notification for silent mode */
+        .silent-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-size: 2rem;
+            z-index: 2000;
+            display: none;
+        }
+
+        @keyframes flashNotification {
+
+            0%,
+            100% {
+                opacity: 0.8;
+            }
+
+            50% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.05);
+            }
+        }
+
+        .flash-notification {
+            animation: flashNotification 0.5s ease-in-out 3;
+        }
+
+        /* Kiosk mode click overlay */
+        .kiosk-audio-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 3000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+        }
+
+        .kiosk-audio-overlay.active {
+            display: flex;
+        }
+
+        .kiosk-audio-message {
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header" style="height: 6vh;">
+        <h1>FARMASI PESAKIT LUAR, JABATAN FARMASI, HOSPITAL SEGAMAT</h1>
+    </div>
+
+    <div id="kiosk-indicator" class="kiosk-mode-indicator">🖥️ KIOSK MODE</div>
+
+    <div id="connection-status" class="connection-status status-connecting">Connecting...</div>
+
+    <div id="audio-status" class="audio-status audio-disabled">Audio: Disabled</div>
+
+    <div id="silent-notification" class="silent-notification">
+        <!-- Will be populated by JS -->
+    </div>
+    <div id="kiosk-audio-overlay" class="kiosk-audio-overlay">
+        <div class="kiosk-audio-message">
+            <h2>🔊 Audio Not Active</h2>
+            <p>Click anywhere to enable audio</p>
+            <small>Kiosk Mode</small>
+        </div>
+    </div>
+    <div id="start-screen">
+        <button id="start-button">Click to Start Display</button>
+        <div class="auto-start-info">
+            <p>Display will auto-start in <span class="countdown" id="countdown">600</span> seconds</p>
+            <p><small>Click anywhere to enable audio</small></p>
+        </div>
+    </div>
+
+    <div class="layout">
+        <div class="main-display">
+            <h2>Nombor Sekarang</h2>
+            <div class="current-call" id="current-number">----</div>
+            <div class="current-counter" id="current-counter">Kaunter -</div>
+            <div class="history">
+                <h2>Panggilan Sebelumnya</h2>
+                <div class="history-item">
+                    <span class="number" id="prev-number-1">----</span>
+                    <span class="counter" id="prev-counter-1">-</span>
+                </div>
+                <div class="history-item">
+                    <span class="number" id="prev-number-2">----</span>
+                    <span class="counter" id="prev-counter-2">-</span>
+                </div>
+                <div class="history-item">
+                    <span class="number" id="prev-number-3">----</span>
+                    <span class="counter" id="prev-counter-3">-</span>
+                </div>
+            </div>
+        </div>
+        <div class="media-panel">
+            <select id="channelSelect">
+                <option value="">-- Select a Channel --</option>
+            </select>
+
+            <div id="player-container">
+                <video id="videoPlayer" controls muted></video>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <marquee behavior="scroll" direction="left" scrollamount="10">Muat turun aplikasi MyUbat untuk mendapatkan
+            bekalan ubat susulan dengan lebih CEPAT dan MUDAH seperti perkhidmatan; 1. Ubat Melalui Pos, 2. Farmasi
+            Pandu Lalu, 3. Lokar Ubat Farmasi. Permohonan perlu dibuat sekurangnya 3 minggu sebelum tarikh pengambilan
+            ubat seterusnya.</marquee>
+    </div>
+
+    <script>
+        // Wait for the page to be fully loaded
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- 🌟 MODIFIED: Global variables ---
+            const video = document.getElementById('videoPlayer');
+            const channelSelect = document.getElementById('channelSelect');
+            let hls; // HLS.js instance
+            let localMediaFiles = []; // Array for your local videos
+            let currentVideoIndex = 0; // Index for local video playlist
+
+            // Initialize HLS.js
+            if (Hls.isSupported()) {
+                console.log("HLS.js is supported. Initializing player...");
+                hls = new Hls();
+                hls.attachMedia(video);
+
+                // Autoplay listener for HLS.js
+                hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                    video.play().catch(e => {
+                        console.warn("HLS.js autoplay failed.", e);
+                    });
+                });
+            }
+
+            // --- 🌟 NEW: Handler for native HLS autoplay (Safari) ---
+            const nativeAutoplay = () => {
+                video.play().catch(e => console.warn("Native autoplay failed.", e));
+            };
+
+            // --- 🌟 NEW: Handler for local media playlist 'ended' event ---
+            const playNextVideo = () => {
+                if (localMediaFiles.length === 0) return;
+                console.log(`Playing local media index ${currentVideoIndex}`);
+                // Set the src and play
+                video.src = localMediaFiles[currentVideoIndex];
+                video.play().catch(e => console.warn("Local media autoplay failed.", e));
+                // Increment index for the *next* time 'ended' fires
+                currentVideoIndex = (currentVideoIndex + 1) % localMediaFiles.length;
+            };
+
+            // --- 🌟 NEW: Handler for local media 'error' event ---
+            const onLocalMediaError = (e) => {
+                console.error("Video playback error on local media:", e);
+                // Try next video on error
+                console.log("Trying next video in 1 second...");
+                setTimeout(playNextVideo, 1000);
+            };
+
+            // --- 🌟 NEW: Function to stop all playback types and clean up listeners ---
+            function stopAllPlayback() {
+                console.log("Stopping all playback and cleaning up listeners.");
+                if (hls) {
+                    hls.stopLoad(); // Stop HLS.js stream
+                }
+                // Remove all event listeners we might have added
+                video.removeEventListener("ended", playNextVideo);
+                video.removeEventListener("error", onLocalMediaError);
+                video.removeEventListener('loadeddata', nativeAutoplay);
+
+                // Clear the video source
+                video.src = '';
+                // Detach HLS.js just in case, so the native 'src' property works
+                if (hls) {
+                    hls.detachMedia();
+                    hls.attachMedia(video);
+                }
+            }
+
+            // --- 🌟 NEW: Function to play HLS.js stream ---
+            function playHlsStream(url) {
+                console.log(`Loading HLS stream: ${url}`);
+                // Autoplay is handled by the 'MANIFEST_PARSED' event listener
+                hls.loadSource(url);
+            }
+
+            // --- 🌟 NEW: Function to play native HLS stream (Safari) ---
+            function playNativeHls(url) {
+                console.log(`Loading native HLS stream: ${url}`);
+                video.src = url;
+                video.addEventListener('loadeddata', nativeAutoplay, { once: true });
+            }
+
+            // --- 🌟 NEW: Function to play the local media playlist ---
+            function playLocalPlaylist() {
+                console.log("Starting local media playlist...");
+                if (localMediaFiles.length === 0) {
+                    alert("Local media list is empty or still loading. Please try again.");
+                    return;
+                }
+                // Add listeners specifically for local playlist mode
+                video.addEventListener("ended", playNextVideo);
+                video.addEventListener("error", onLocalMediaError);
+
+                // Start the playlist from the beginning
+                currentVideoIndex = 0;
+                playNextVideo(); // Call to play the first video
+            }
+
+            /**
+             * Function to fetch and parse the M3U playlist
+             */
+            async function loadPlaylist() {
+                try {
+                    // Fetch the local playlist file
+                    const response = await fetch('/static/livetv.m3u8');
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    const data = await response.text();
+
+                    // Parse the playlist
+                    const channels = parseM3U(data);
+
+                    // Populate the dropdown
+                    channels.forEach(channel => {
+                        const option = document.createElement('option');
+                        option.value = channel.url;
+                        option.textContent = channel.name;
+                        channelSelect.appendChild(option);
+                    });
+
+                    // --- 🌟 MODIFIED: Add Local Media Option ---
+                    const localOption = document.createElement('option');
+                    localOption.value = 'local_media_playlist'; // Special value
+                    localOption.textContent = 'Local Media Playlist';
+                    channelSelect.appendChild(localOption);
+                    // --- 🌟 END MODIFICATION ---
+
+
+                    // Set default channel to TV1
+                    console.log("Playlist loaded. Setting default channel to TV1...");
+                    const defaultChannelName = "TV1";
+                    const defaultChannel = channels.find(channel => channel.name === defaultChannelName);
+
+                    if (defaultChannel) {
+                        console.log("Found default channel:", defaultChannel.name);
+                        channelSelect.value = defaultChannel.url;
+                        loadChannel(); // Manually load the default channel
+                    } else {
+                        console.warn(`Default channel "${defaultChannelName}" not found in playlist.`);
+                    }
+
+                } catch (error) {
+                    console.error('Failed to load or parse playlist:', error);
+                    alert('Error: Could not load the livetv.m3u8 file.');
+                }
+            }
+
+            // --- 🌟 NEW: Function to fetch your local media files ---
+            async function fetchLocalMedia() {
+                try {
+                    const res = await fetch('/api/media-list');
+                    const data = await res.json();
+                    if (data.status === 'success' && data.media_files.length > 0) {
+                        localMediaFiles = data.media_files;
+                        console.log(`📹 Loaded ${localMediaFiles.length} local media files`);
+                    } else {
+                        console.warn("⚠️ No local media files found from API.");
+                    }
+                } catch (error) {
+                    console.error("❌ Failed to load local media files:", error);
+                }
+            }
+
+            /**
+             * Simple M3U parser
+             */
+            function parseM3U(data) {
+                const lines = data.split('\n');
+                const channels = [];
+                let currentName = null;
+
+                for (const line of lines) {
+                    if (line.startsWith('#EXTINF:')) {
+                        const parts = line.split(',');
+                        currentName = parts[parts.length - 1].trim();
+                    } else if (currentName && !line.startsWith('#') && line.trim()) {
+                        channels.push({
+                            name: currentName,
+                            url: line.trim()
+                        });
+                        currentName = null;
+                    }
+                }
+                return channels;
+            }
+
+            /**
+             * --- 🌟 MODIFIED: Master function to load the selected channel ---
+             */
+            function loadChannel() {
+                const url = channelSelect.value;
+
+                // Clean up any previous player state (HLS or local)
+                stopAllPlayback();
+
+                if (!url) {
+                    // Stop playback if "Select a Channel" is chosen
+                    return;
+                }
+
+                // --- Check the 'channel' type ---
+
+                if (url === 'local_media_playlist') {
+                    // --- Play Local Media ---
+                    playLocalPlaylist();
+
+                } else if (url.endsWith('.m3u8')) {
+                    // --- Play HLS Stream ---
+                    if (Hls.isSupported()) {
+                        playHlsStream(url);
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                        playNativeHls(url);
+                    }
+                } else if (url.endsWith('.mpd')) {
+                    // --- DASH Stream (Unsupported) ---
+                    console.warn(`DASH stream not supported: ${url}`);
+                    alert('This player cannot play this stream. Only .m3u8 (HLS) streams are supported. This is a .mpd (DASH) stream.');
+                } else {
+                    alert('Unsupported stream type.');
+                }
+            }
+
+            // --- Start the process ---
+
+            // 1. Load the M3U playlist into the dropdown
+            loadPlaylist();
+
+            // 2. 🌟 NEW: Fetch the local media list in the background
+            fetchLocalMedia();
+
+            // 3. Listen for changes on the dropdown
+            channelSelect.addEventListener('change', loadChannel);
+
+            // 4. Keyboard Shortcut Listener (no changes needed)
+            document.addEventListener('keydown', (event) => {
+                const keyName = event.key;
+                if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(keyName)) {
+                    return;
+                }
+                event.preventDefault();
+                const totalOptions = channelSelect.options.length;
+                let currentIndex = channelSelect.selectedIndex;
+                let newIndex = currentIndex;
+                const firstChannelIndex = 1;
+                const lastChannelIndex = totalOptions - 1;
+
+                if (keyName === 'ArrowDown' || keyName === 'ArrowRight') {
+                    newIndex++;
+                    if (newIndex > lastChannelIndex) {
+                        newIndex = firstChannelIndex;
+                    }
+                } else if (keyName === 'ArrowUp' || keyName === 'ArrowLeft') {
+                    newIndex--;
+                    if (newIndex < firstChannelIndex) {
+                        newIndex = lastChannelIndex;
+                    }
+                }
+
+                if (newIndex !== currentIndex) {
+                    console.log(`Key pressed: ${keyName}. Changing channel to index ${newIndex}`);
+                    channelSelect.selectedIndex = newIndex;
+                    loadChannel();
+                }
+            });
+
+        });
+    </script>
+
+    <script>
+
+        // --- Global State ---
+        let lastCalledNumber = null;
+        let isPlayingAudio = false;
+        let audioEnabled = false;
+        let hasUserInteracted = false;
+        const audioQueue = [];
+        let socket = null;
+        let isKioskMode = false;
+
+        // --- Audio Files ---
+        const audioFiles = {
+            "bell": new Audio("/static/audio/doorbell.mp3"),
+            "0": new Audio("/static/audio/0.mp3"),
+            "1": new Audio("/static/audio/1.mp3"),
+            "2": new Audio("/static/audio/2.mp3"),
+            "3": new Audio("/static/audio/3.mp3"),
+            "4": new Audio("/static/audio/4.mp3"),
+            "5": new Audio("/static/audio/5.mp3"),
+            "6": new Audio("/static/audio/6.mp3"),
+            "7": new Audio("/static/audio/7.mp3"),
+            "8": new Audio("/static/audio/8.mp3"),
+            "9": new Audio("/static/audio/9.mp3"),
+            "counter1": new Audio("/static/audio/counter1.mp3"),
+            "counter2": new Audio("/static/audio/counter2.mp3"),
+            "counter3": new Audio("/static/audio/counter3.mp3"),
+            "counter4": new Audio("/static/audio/counter4.mp3"),
+            "counter5": new Audio("/static/audio/counter5.mp3")
+        };
+
+        // --- DOM Elements ---
+        const startScreen = document.getElementById("start-screen");
+        const startButton = document.getElementById("start-button");
+        const videoPlayer = document.getElementById("videoPlayer");
+        const currentNumberEl = document.getElementById("current-number");
+        const currentCounterEl = document.getElementById("current-counter");
+        const connectionStatusEl = document.getElementById("connection-status");
+        const audioStatusEl = document.getElementById("audio-status");
+        const silentNotificationEl = document.getElementById("silent-notification");
+        const countdownEl = document.getElementById("countdown");
+        const kioskIndicatorEl = document.getElementById("kiosk-indicator");
+        const kioskAudioOverlayEl = document.getElementById("kiosk-audio-overlay");
+        let kioskAudioActivated = false;
+
+        // --- 1. Improved Kiosk Detection ---
+        function detectKioskMode() {
+            // Check URL parameters first
+            const urlParams = new URLSearchParams(window.location.search);
+            const kioskParam = urlParams.get('kiosk') || urlParams.get('kioskmode');
+
+            if (kioskParam === 'true' || kioskParam === '1') {
+                console.log('🖥️ Kiosk mode enabled via URL parameter');
+                return true;
+            }
+
+            // Check hash parameters as well
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const kioskHash = hashParams.get('kiosk') || hashParams.get('kioskmode');
+
+            if (kioskHash === 'true' || kioskHash === '1') {
+                console.log('🖥️ Kiosk mode enabled via hash parameter');
+                return true;
+            }
+
+            // More conservative hardware detection - only for true kiosk indicators
+            const isRealKiosk = (
+                // Chrome kiosk mode specific indicators
+                (window.chrome && window.chrome.app && window.chrome.app.isInstalled) ||
+                // Fullscreen API active
+                (document.fullscreenElement !== null) ||
+                // Very specific screen size matches (common kiosk resolutions)
+                (window.screen.width === window.outerWidth &&
+                    window.screen.height === window.outerHeight &&
+                    window.outerWidth >= 1920) || // Only large displays
+                // Electron app detection
+                (typeof window !== 'undefined' && window.process && window.process.type) ||
+                // CEF/embedded browser detection
+                (navigator.userAgent.includes('CefSharp') ||
+                    navigator.userAgent.includes('Embedded') ||
+                    navigator.userAgent.includes('Kiosk'))
+            );
+
+            if (isRealKiosk) {
+                console.log('🖥️ True kiosk mode detected via hardware/software indicators');
+                return true;
+            }
+
+            console.log('🖥️ Regular browser mode detected');
+            return false;
+        }
+
+        // --- 2. Autoplay Policy Detection ---
+        function detectAutoplayPolicy() {
+            // Check if autoplay is likely allowed
+            const isAutoplayAllowed =
+                navigator.getAutoplayPolicy && navigator.getAutoplayPolicy('mediaelement') === 'allowed' ||
+                window.location.protocol === 'file:' || // Local files
+                window.location.hostname === 'localhost' || // Localhost
+                window.location.hostname.startsWith('127.') || // Local IP
+                window.location.hostname.match(/^\d+\.\d+\.\d+\.\d+$/); // Direct IP access
+
+            console.log('🔊 Autoplay policy detection:', isAutoplayAllowed);
+            return isAutoplayAllowed;
+        }
+
+        // --- Helper Functions ---
+        function updateConnectionStatus(status, message) {
+            connectionStatusEl.className = `connection-status status-${status}`;
+            connectionStatusEl.textContent = message;
+        }
+
+        let audioStatusTimer = null;
+
+        function updateAudioStatus(status, message) {
+            audioStatusEl.className = `audio-status audio-${status}`;
+            audioStatusEl.textContent = message;
+            audioStatusEl.style.display = 'block';
+
+            // Clear any existing timer
+            if (audioStatusTimer) {
+                clearTimeout(audioStatusTimer);
+                audioStatusTimer = null;
+            }
+
+            // Auto-hide after 10 seconds only if audio is enabled
+            if (status === 'enabled') {
+                audioStatusTimer = setTimeout(() => {
+                    audioStatusEl.style.display = 'none';
+                    console.log('🔇 Audio status notification hidden after 10 seconds');
+                }, 10000);
+            }
+        }
+
+        function showSilentNotification(number, counter) {
+            // Update the text content
+            const counterText = counter === '-' ? '' : ` KE KAUNTER ${counter}`;
+            silentNotificationEl.textContent = `PANGGILAN ${number}${counterText}`;
+
+            silentNotificationEl.style.display = 'block';
+            silentNotificationEl.classList.add('flash-notification');
+
+            setTimeout(() => {
+                silentNotificationEl.style.display = 'none';
+                silentNotificationEl.classList.remove('flash-notification');
+            }, 3000);
+        }
+
+        function updateKioskIndicator(isKiosk) {
+            if (isKiosk) {
+                kioskIndicatorEl.classList.add('active');
+            } else {
+                kioskIndicatorEl.classList.remove('active');
+            }
+        }
+
+        function showKioskAudioOverlay() {
+            if (isKioskMode && !audioEnabled && !kioskAudioActivated) {
+                kioskAudioOverlayEl.classList.add('active');
+                console.log('🖥️ Showing kiosk audio activation overlay');
+            }
+        }
+
+        function hideKioskAudioOverlay() {
+            kioskAudioOverlayEl.classList.remove('active');
+        }
+
+        // --- 4. Enhanced Audio Activation ---
+        async function testAudioCapability() {
+            try {
+                // Create a simple audio context to test Web Audio API
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+                // Try to resume audio context (required after user gesture)
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+
+                console.log('🎵 Audio context state:', audioContext.state);
+
+                // Test with actual bell audio file
+                if (audioFiles["bell"]) {
+                    audioFiles["bell"].volume = 0.1; // Very low volume for test
+                    audioFiles["bell"].currentTime = 0;
+                    await audioFiles["bell"].play();
+                    audioFiles["bell"].pause();
+                    audioFiles["bell"].currentTime = 0;
+                    console.log('🔔 Bell audio test successful');
+                }
+
+                await audioContext.close();
+                return true;
+            } catch (error) {
+                console.log("❌ Audio capability test failed:", error.message);
+
+                // Try alternative test with HTML5 audio - especially for kiosk mode
+                try {
+                    const testAudio = new Audio("data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmgfBTiH0fPTgjMGJHLH8+OZSA0PVqXh8bllHgg2jdXzzn0vBSF+zPLaizsIGGS57OihUQwKTKXh8bllHgg2jdT0z3wvBSJ+y/PajDwIF2S56+mjUgwJTKPi8blnHgU2jdTy0H4wBSJ9y/LajDwIF2S56+mjUgwJTKPi8blnHgU2jdTy0H4wBSJ9y/LajDwIF2S56+mjUgwJTKPi8blnHgU2jdTy0H4wBSJ9y/LajDwIF2S56+mjUgwJTKPi8blnHgU2jdTy0H4wBSJ9y/LajDwIF2S56+mjUgwJTKPi8blnHgU2jdTy0H4wBSJ9y/LajDwIF2S56+mjUgwJTKPi8blnHgU2jdTy0H4wBSJ9y/LajDwIF2S56+mjUgwJTKPi8blnHgU2jdTy0H4wBSJ9y/LajDwIF2S56+mjUgwJTKPi8blnHgU2jdTy0H4wBSJ9y/LajDwIF2W56+mjUgwJTKPi8blnHgU2jdTy0H4wBSJ9y/LajDwIF2W56+mjUgwJTKPi8blnHgU2jdTy0H4wBSJ9y/LajDwIF2W56+mjUgwJTKPi8blnHgU2jdTy0H4wBSJ9y/LajDwIF2W56+mjUgwJTKPi8blnHgU2jdTy0H4wBSJ9y/LajDwIF2W56+mjUgwJTKPi8blnHgU2jdTy0H4wBSJ9y/LajDwIF2W56+mjUgwJTKPi8blnHgU2jdTy0H4wBSJ9y/LajDwIF2W56+mjUgwJTKPi8blnHgU2jdTy0H4wBSJ9y/LajDwIF2W56+mjUgwJTKPi8blnHgU2jdTy0H4wBSJ9y/LajDwIF2W56+mjUgwJTKPi8blnHgU2jdTy0H4wBSJ9y/LajDwIF2W56+mjUgwJTKPi8blnHgU");
+                    testAudio.volume = 0;
+                    await testAudio.play();
+                    testAudio.pause();
+                    console.log('✅ Alternative audio test successful');
+                    return true;
+                } catch (e2) {
+                    console.log("❌ Alternative audio test also failed:", e2.message);
+                    return false;
+                }
+            }
+        }
+
+        async function enableAudio(forceEnable = false) {
+            console.log("🎵 Attempting to enable audio... (forceEnable:", forceEnable, ")");
+
+            try {
+                hasUserInteracted = true;
+
+                console.log('🚀 Launch environment - Kiosk:', isKioskMode, 'Force Enable:', forceEnable);
+
+                // For kiosk mode with force enable, try to enable immediately
+                if (isKioskMode && forceEnable) {
+                    console.log('🎯 Kiosk mode with force enable - attempting direct audio activation');
+
+                    try {
+                        // Create audio context without waiting for user gesture
+                        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        if (audioContext.state === 'suspended') {
+                            await audioContext.resume();
+                        }
+                        console.log('🎵 Audio context activated in kiosk mode:', audioContext.state);
+                        await audioContext.close();
+                    } catch (contextError) {
+                        console.log('❌ Audio context activation failed in kiosk mode:', contextError.message);
+                    }
+                }
+
+                // First, preload all audio files with error handling
+                const audioLoadPromises = Object.keys(audioFiles).map(key => {
+                    return new Promise((resolve) => {
+                        const audio = audioFiles[key];
+                        audio.preload = 'auto';
+
+                        // Set crossorigin for better compatibility
+                        audio.crossOrigin = 'anonymous';
+
+                        // For kiosk mode, try to bypass some restrictions
+                        if (isKioskMode || forceEnable) {
+                            audio.autoplay = false; // Ensure autoplay is off initially
+                            audio.muted = false;
+                        }
+
+                        audio.load();
+
+                        const onLoadedData = () => {
+                            console.log(`✅ Audio file ${key} loaded successfully`);
+                            cleanup();
+                            resolve(true);
+                        };
+
+                        const onError = (error) => {
+                            console.warn(`❌ Failed to load audio file ${key}:`, error);
+                            cleanup();
+                            resolve(false);
+                        };
+
+                        const cleanup = () => {
+                            audio.removeEventListener('loadeddata', onLoadedData);
+                            audio.removeEventListener('error', onError);
+                            audio.removeEventListener('canplaythrough', onLoadedData);
+                        };
+
+                        audio.addEventListener('loadeddata', onLoadedData);
+                        audio.addEventListener('canplaythrough', onLoadedData);
+                        audio.addEventListener('error', onError);
+
+                        // Shorter timeout for kiosk mode
+                        const timeout = isKioskMode ? 2000 : 3000;
+                        setTimeout(() => {
+                            cleanup();
+                            resolve(false);
+                        }, timeout);
+                    });
+                });
+
+                // Wait for audio files to load (or timeout)
+                const loadResults = await Promise.all(audioLoadPromises);
+                const loadedCount = loadResults.filter(result => result).length;
+                console.log(`📊 Loaded ${loadedCount}/${Object.keys(audioFiles).length} audio files`);
+
+                // Test audio capability
+                let canPlay = false;
+                try {
+                    canPlay = await testAudioCapability();
+                } catch (testError) {
+                    console.log('❌ Audio capability test threw error:', testError.message);
+                    // In kiosk mode, assume it can play if files loaded
+                    canPlay = isKioskMode && loadedCount > 0;
+                }
+
+                if (canPlay || loadedCount > 0 || (isKioskMode && forceEnable)) {
+                    audioEnabled = true;
+                    const statusMsg = isKioskMode ?
+                        `Kiosk Mode Enabled` :
+                        `Audio Enabled `;
+                    updateAudioStatus('enabled', statusMsg);
+                    console.log("✅ Audio enabled successfully");
+
+                    // Hide kiosk overlay when audio is successfully enabled
+                    if (isKioskMode && audioEnabled) {
+                        hideKioskAudioOverlay();
+                        kioskAudioActivated = true;
+                    }
+
+                    return true;
+                } else {
+                    throw new Error("No audio files loaded and capability test failed");
+                }
+            } catch (error) {
+                console.warn("❌ Failed to enable audio:", error.message);
+                audioEnabled = false;
+                updateAudioStatus('failed', 'Audio: Failed - ' + error.message);
+                return false;
+            }
+        }
+
+        function disableAudio() {
+            audioEnabled = false;
+            updateAudioStatus('disabled', 'Audio: Disabled');
+            console.log("🔇 Audio disabled");
+        }
+
+        // --- Core Functions ---
+        function updateDisplay(number, counter, animate = true, showNotification = false) {
+            currentNumberEl.textContent = number;
+            currentCounterEl.textContent = counter === '-' ? '-' : `Kaunter ${counter}`;
+
+            if (animate) {
+                currentNumberEl.classList.remove("animate-call");
+                void currentNumberEl.offsetWidth; // Reflow to reset animation
+                currentNumberEl.classList.add("animate-call");
+            }
+
+            // Show visual notification if audio is disabled and this is a new call
+            if (!audioEnabled && showNotification && number !== '----') {
+                showSilentNotification(number, counter);
+            }
+        }
+
+        function updateHistory(history) {
+            for (let i = 0; i < 3; i++) {
+                const call = history[i] || { number: "----", counter: "-" };
+                document.getElementById(`prev-number-${i + 1}`).textContent = call.number;
+                const counterText = call.counter === '-' ? '-' : `Kaunter ${call.counter}`;
+                document.getElementById(`prev-counter-${i + 1}`).textContent = counterText;
+            }
+        }
+
+        const video = document.getElementById('videoPlayer'); // your <video> element
+
+        function playAudioSequence(sequence, onComplete) {
+            if (!audioEnabled || !sequence.length) {
+                if (onComplete) onComplete();
+                return;
+            }
+
+            const sound = sequence.shift();
+            sound.currentTime = 0;
+            sound.volume = 0.7;
+
+            if (video) video.muted = true;
+
+            const playPromise = sound.play();
+
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log("🎵 Audio playing successfully");
+                }).catch(error => {
+                    console.error("❌ Audio play failed:", error.message);
+                    // Don't disable audio immediately, might be a temporary issue
+                    updateAudioStatus('failed', 'Audio: Play Failed');
+                    if (onComplete) onComplete();
+                    return;
+                });
+            }
+
+            const onAudioEnd = () => {
+                sound.removeEventListener('ended', onAudioEnd);
+                sound.removeEventListener('error', onAudioError);
+
+                if (sequence.length) {
+                    playAudioSequence(sequence, onComplete);
+                } else {
+                    if (video) video.muted = false;
+                    if (onComplete) onComplete();
+                }
+            };
+
+            const onAudioError = (error) => {
+                console.error("❌ Audio error during playback:", error);
+                sound.removeEventListener('ended', onAudioEnd);
+                sound.removeEventListener('error', onAudioError);
+                if (video) video.muted = false;
+                if (onComplete) onComplete();
+            };
+
+            sound.addEventListener('ended', onAudioEnd);
+            sound.addEventListener('error', onAudioError);
+        }
+
+        function processAudioQueue() {
+            if (isPlayingAudio || audioQueue.length === 0) {
+                return;
+            }
+
+            isPlayingAudio = true;
+            const { number, counter } = audioQueue.shift();
+
+            updateDisplay(number, counter, true, !audioEnabled);
+
+            if (audioEnabled) {
+                const sequence = [audioFiles["bell"]];
+                number.toString().split("").forEach(digit => {
+                    if (audioFiles[digit]) sequence.push(audioFiles[digit]);
+                });
+                if (audioFiles[`counter${counter}`]) {
+                    sequence.push(audioFiles[`counter${counter}`]);
+                }
+
+                playAudioSequence(sequence, () => {
+                    isPlayingAudio = false;
+                    processAudioQueue(); // Play next in queue if any
+                });
+            } else {
+                // If audio is disabled, just finish immediately
+                setTimeout(() => {
+                    isPlayingAudio = false;
+                    processAudioQueue();
+                }, 100);
+            }
+        }
+
+
+        // --- Socket.IO Management ---
+        function initializeSocket() {
+            socket = io();
+
+            socket.on("connect", () => {
+                console.log("🔌 Connected to server");
+                updateConnectionStatus('connected', 'Connected');
+            });
+
+            socket.on("disconnect", (reason) => {
+                console.log("❌ Disconnected from server:", reason);
+                updateConnectionStatus('disconnected', 'Disconnected');
+            });
+
+            socket.on("connect_error", (error) => {
+                console.error("❌ Connection error:", error);
+                updateConnectionStatus('disconnected', 'Connection Error');
+            });
+
+            socket.on("reconnect", (attemptNumber) => {
+                console.log("🔄 Reconnected after", attemptNumber, "attempts");
+                updateConnectionStatus('connected', 'Reconnected');
+            });
+
+            socket.on("reconnect_attempt", (attemptNumber) => {
+                console.log("🔄 Reconnection attempt", attemptNumber);
+                updateConnectionStatus('connecting', `Reconnecting... (${attemptNumber})`);
+            });
+
+            socket.on("current_state", (data) => {
+                console.log("📨 Received state:", data);
+                const currentCall = data.current;
+
+                // If there's a new, different call, add it to the audio queue.
+                if (currentCall && currentCall.number) {
+                    lastCalledNumber = currentCall.number;
+                    audioQueue.push({
+                        number: currentCall.number,
+                        counter: currentCall.counter
+                    });
+                    processAudioQueue();
+                }
+                // If it's the first load (no last number), just display without sound.
+                else if (currentCall && currentCall.number && lastCalledNumber === null) {
+                    lastCalledNumber = currentCall.number;
+                    updateDisplay(currentCall.number, currentCall.counter, false);
+                }
+                // Handle case where there's no current call
+                else if (!currentCall || !currentCall.number) {
+                    updateDisplay('----', '-', false);
+                }
+
+                // Always update the history panel
+                updateHistory(data.history || []);
+            });
+
+            // Handle any server errors
+            socket.on("error", (data) => {
+                console.error("❌ Server error:", data);
+            });
+        }
+
+        // --- 3. Smart Auto-Start Behavior ---
+        function startAutoCountdown() {
+            let countdown = 600;
+            const isAutoplayAllowed = detectAutoplayPolicy();
+
+            // If in kiosk mode with proper flags, start immediately with audio
+            if (isKioskMode && isAutoplayAllowed) {
+                console.log('🚀 Kiosk mode with autoplay detected - starting immediately with audio');
+                setTimeout(() => {
+                    autoStartDisplay(true); // Enable audio for kiosk mode
+                }, 1000); // Brief delay to ensure everything is loaded
+                return;
+            }
+
+            const countdownInterval = setInterval(() => {
+                countdownEl.textContent = countdown;
+                countdown--;
+
+                if (countdown < 0) {
+                    clearInterval(countdownInterval);
+                    autoStartDisplay();
+                }
+            }, 1000);
+
+            // Clear countdown if user clicks manually
+            startButton.addEventListener('click', () => {
+                clearInterval(countdownInterval);
+            });
+        }
+
+        function autoStartDisplay(enableAudio = false) {
+            console.log('🚀 Auto-starting display... Audio enabled:', enableAudio || isKioskMode);
+            startDisplay(enableAudio || isKioskMode);
+        }
+
+        function startDisplay(enableAudioOnStart = true) {
+            startScreen.style.display = "none";
+
+            // Only unmute video if we're enabling audio (user gesture present)
+            if (enableAudioOnStart) {
+                try {
+                    if (videoPlayer) {
+                        videoPlayer.muted = false; // Unmute the video
+                        videoPlayer.volume = 0.5;  // Set volume to 50%
+                        console.log('🔊 Video player unmuted and volume set to 50%');
+                    }
+                } catch (e) {
+                    console.error('Error unmuting video player:', e);
+                }
+            } else {
+                // Keep video muted during auto-start to prevent pause
+                console.log('📹 Video player kept muted for auto-start (will unmute on user interaction)');
+            }
+
+            if (enableAudioOnStart) {
+                // Force enable audio for kiosk mode
+                enableAudio(isKioskMode).then(success => {
+                    if (!success && !isKioskMode) {
+                        console.log("❌ Audio failed to enable - user can click anywhere to retry");
+                    } else if (!success && isKioskMode) {
+                        console.log("🔄 Audio failed in kiosk mode, showing click overlay");
+                        showKioskAudioOverlay();
+                    }
+                });
+            } else if (isKioskMode) {
+                // In kiosk mode but audio not enabled on start, show overlay
+                showKioskAudioOverlay();
+            } else {
+                disableAudio();
+            }
+
+            // Connect to Socket.IO
+            initializeSocket();
+        }
+
+        // --- Event Listeners ---
+        startButton.addEventListener("click", async (e) => {
+            e.preventDefault();
+            console.log('👆 Manual start - attempting to enable audio...');
+
+            // Force audio context activation for modern browsers
+            try {
+                // Create and immediately close an audio context to trigger permission
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                await audioContext.resume();
+                await audioContext.close();
+                console.log("✅ Audio context activated successfully");
+            } catch (contextError) {
+                console.warn("❌ Audio context activation failed:", contextError.message);
+            }
+
+            if (videoPlayer) {
+                videoPlayer.muted = false; // Unmute the video
+                videoPlayer.volume = 0.35;  // Set volume to 35%
+                console.log('🔊 Video player unmuted and volume set to 35%');
+            }
+
+            startDisplay(true); // Manual start tries to enable audio
+        });
+
+        // These listeners are now handled in the DOMContentLoaded section
+        // to avoid conflicts with the handleFirstInteraction function
+
+        // Kiosk mode - click anywhere to activate audio
+        kioskAudioOverlayEl.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            console.log('🖥️ Kiosk overlay clicked - activating audio...');
+            kioskAudioActivated = true;
+            hideKioskAudioOverlay();
+
+            if (videoPlayer) {
+                videoPlayer.muted = false; // Unmute the video
+                videoPlayer.volume = 0.35;  // Set volume to 35%
+                console.log('🔊 Video player unmuted and volume set to 35% on kiosk click');
+            }
+
+            const success = await enableAudio(true);
+            if (success) {
+                console.log('✅ Kiosk audio activated successfully');
+            } else {
+                console.log('❌ Kiosk audio activation failed');
+                // Show overlay again after delay
+                setTimeout(showKioskAudioOverlay, 3000);
+                kioskAudioActivated = false;
+            }
+        });
+
+        // Audio retry button removed - clicking anywhere will enable audio
+
+        // Handle page visibility changes to reconnect if needed
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden && socket && !socket.connected) {
+                console.log("👁️ Page became visible, attempting to reconnect...");
+                socket.connect();
+            }
+        });
+
+        // --- Initialize on page load ---
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('🚀 Page loaded, initializing display system...');
+
+            // Initialize kiosk mode detection
+            isKioskMode = detectKioskMode();
+            updateKioskIndicator(isKioskMode);
+
+            console.log('🔊 Environment Check:');
+            console.log('  - Kiosk Mode:', isKioskMode);
+            console.log('  - Autoplay Policy:', detectAutoplayPolicy());
+            console.log('  - User Agent:', navigator.userAgent.substring(0, 100) + '...');
+            console.log('  - Screen:', window.screen.width + 'x' + window.screen.height);
+            console.log('  - Window:', window.innerWidth + 'x' + window.innerHeight);
+            console.log('  - URL:', window.location.href);
+
+            // Removed 3-second auto-start - app will only start with valid user interaction
+            // This ensures audio is always enabled when the app starts
+
+            // Alternative: Start on any user interaction
+            let hasUserInteractedForStart = false;
+
+            // Valid audio gestures according to Chrome's autoplay policy
+            const audioGestures = ['click', 'touchstart', 'keydown'];
+            const allGestures = ['click', 'touchstart', 'keydown', 'mousemove'];
+
+            const handleFirstInteraction = async (e) => {
+                if (!hasUserInteractedForStart) {
+                    hasUserInteractedForStart = true;
+                    localStorage.setItem('qms-display-interacted', 'true');
+
+                    const startScreen = document.getElementById('start-screen');
+                    if (startScreen && startScreen.style.display !== 'none') {
+                        console.log('Starting app via user interaction:', e.type);
+                        startButton.click();
+                        // Remove listeners after starting
+                        removeInteractionListeners();
+                    } else if (!audioEnabled) {
+                        // Check if this is a valid audio gesture
+                        if (audioGestures.includes(e.type)) {
+                            // Valid gesture for enabling audio
+                            console.log('Enabling audio via valid user gesture:', e.type);
+
+                            // Unmute video player on user interaction
+                            if (videoPlayer && videoPlayer.muted) {
+                                videoPlayer.muted = false;
+                                videoPlayer.volume = 0.35;
+                                console.log('🔊 Video player unmuted via user interaction');
+                            }
+
+                            await enableAudio(isKioskMode);
+                            // Remove listeners after enabling audio
+                            removeInteractionListeners();
+                        } else {
+                            // Not a valid audio gesture (e.g., mousemove)
+                            console.log('⚠️ Interaction detected (' + e.type + ') but not valid for audio. Please click, touch, or press a key.');
+                            // Don't remove listeners - keep waiting for valid gesture
+                        }
+                    }
+                }
+            };
+
+            // Function to remove all interaction listeners
+            const removeInteractionListeners = () => {
+                allGestures.forEach(event => {
+                    document.removeEventListener(event, handleFirstInteraction);
+                });
+                console.log('🗑️ Removed interaction listeners');
+            };
+
+            // Listen for any user interaction to start the app or enable audio
+            // Don't use 'once: true' so listeners persist after auto-start
+            allGestures.forEach(event => {
+                document.addEventListener(event, handleFirstInteraction);
+            });
+
+            startAutoCountdown();
+        });
+
+        // Prevent context menu to avoid accidental interactions
+        //document.addEventListener('contextmenu', e => e.preventDefault());
+
+        // Add error handler for unhandled promise rejections
+        window.addEventListener('unhandledrejection', event => {
+            console.error('❌ Unhandled promise rejection:', event.reason);
+        });
+
+        // Add global error handler
+        window.addEventListener('error', event => {
+            console.error('❌ Global error:', event.error);
+        });
+
+
+    </script>
+
+</body>
+
+</html>
