@@ -2,339 +2,200 @@
 <html lang="en">
 
 <head>
-    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QMS Staff Panel</title>
-    <script src="{{ url_for('static', filename='js/socket.io.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/qrcode.min.js') }}" defer></script>
+    <title>QMS Staff Terminal</title>
+    <!-- Local Bootstrap CSS -->
+    <link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.min.css">
+
+    <!-- Scripts -->
+    <script src="/static/js/socket.io.min.js"></script>
+    <script src="/static/js/qrcode.min.js"></script>
+
     <style>
+        :root {
+            --primary-navy: #1a237e;
+            --secondary-blue: #0d47a1;
+            --soft-blue: #e8eaf6;
+            --hover-yellow: #fffbc8;
+            --accent-cyan: #00bcd4;
+            --text-dark: #2c3e50;
+            --off-white: #f8f9fa;
+        }
+
         body {
-            font-family: "Inter", "Segoe UI", sans-serif;
-            background: linear-gradient(0deg, #C33764, #020b57);
-            color: #2d3748;
-            padding: 16px;
-            max-width: 480px;
-            margin: 0 auto;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--off-white);
+            color: var(--text-dark);
+            overflow-x: hidden;
             min-height: 100vh;
         }
 
-        h1 {
-            font-size: 1.75rem;
+        /* Sidebar Styles */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, var(--primary-navy) 0%, var(--secondary-blue) 100%);
+            color: white;
+            min-height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .sidebar-brand {
+            padding: 1.5rem;
+            font-size: 1.5rem;
             font-weight: 700;
-            color: #FFFFFF;
-            text-align: center;
-            margin-bottom: 24px;
-            letter-spacing: -0.025em;
-        }
-
-        /* Connection Info Section */
-        .connection-info {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #4a5568;
-            padding: 20px;
-            border-radius: 16px;
-            margin-bottom: 24px;
-            text-align: center;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-
-        .connection-info h3 {
-            margin: 0 0 12px 0;
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: #2d3748;
-        }
-
-        .connection-details {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-
-        .connection-text {
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .connection-url {
-            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace;
-            background: rgba(237, 242, 247, 0.8);
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            margin: 6px 0;
-            word-break: break-all;
-            border: 1px solid rgba(226, 232, 240, 0.8);
-        }
-
-        .qr-container {
-            background: white;
-            padding: 12px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        #qrcode {
-            max-width: 120px;
-            height: auto;
-        }
-
-        /* Recent Calls Section */
-        .recent-calls {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 20px;
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            margin-bottom: 24px;
-        }
-
-        .recent-calls h3 {
-            margin: 0 0 16px 0;
-            color: #2d3748;
-            font-size: 1.125rem;
-            font-weight: 600;
+            color: white;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
             align-items: center;
-            gap: 8px;
-        }
-
-        .recent-calls-list {
-            display: flex;
-            flex-direction: column;
             gap: 10px;
         }
 
-        .recent-call-item {
+        .sidebar-menu {
+            padding: 1rem 0;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.8rem 1.5rem;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 12px 16px;
-            background: rgba(247, 250, 252, 0.8);
-            border-radius: 12px;
-            border-left: 4px solid #4299e1;
-            transition: all 0.2s ease;
+            gap: 12px;
+            transition: all 0.2s;
+            font-weight: 500;
+            text-decoration: none;
         }
 
-        .recent-call-item:hover {
-            background: rgba(237, 242, 247, 0.9);
-            transform: translateY(-1px);
-        }
-
-        .recent-call-number {
-            font-weight: 700;
-            color: #2d3748;
-            font-size: 1.125rem;
-        }
-
-        .recent-call-details {
-            font-size: 0.875rem;
-            color: #718096;
-            text-align: right;
-        }
-
-        .recent-call-time {
-            display: block;
-            font-size: 0.75rem;
-            color: #a0aec0;
-        }
-
-        .no-recent-calls {
-            text-align: center;
-            color: #a0aec0;
-            font-style: italic;
-            padding: 20px;
-        }
-
-        /* Main Form */
-        form {
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 24px;
-            border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        }
-
-        label {
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #2d3748;
-            font-size: 1.125rem;
-        }
-
-        select {
-            font-size: 1.125rem;
-            padding: 14px 16px;
-            border-radius: 12px;
-            border: 2px solid #e2e8f0;
-            width: 100%;
-            background: white;
-            color: #2d3748;
-            transition: all 0.2s ease;
-        }
-
-        select:focus {
-            outline: none;
-            border-color: #4299e1;
-            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
-        }
-
-        button {
-            padding: 16px 24px;
-            font-size: 1.2rem;
-            font-weight: 600;
-            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+        .nav-link:hover,
+        .nav-link.active {
             color: white;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 2px 3px 1px rgba(66, 153, 225, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            border-left: 4px solid var(--accent-cyan);
         }
 
-        button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(66, 153, 225, 0.4);
+        /* Main Content */
+        .main-content {
+            margin-left: 260px;
+            padding: 2rem;
+            transition: all 0.3s;
         }
 
-        button:active {
-            transform: translateY(0);
+        /* Responsive Mobile Layout */
+        @media (max-width: 992px) {
+            .sidebar {
+                margin-left: -260px;
+            }
+
+            .sidebar.active {
+                margin-left: 0;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            /* Mobile header shift */
+            .mobile-header {
+                display: flex !important;
+            }
         }
 
-        button:disabled {
-            background: #cbd5e0;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
+        /* Keypad Styles */
+        .keypad-container {
+            max-width: 400px;
+            margin: 0 auto;
         }
 
-        .status {
-            margin-top: 16px;
-            font-weight: 600;
-            text-align: center;
-            height: 24px;
-            font-size: 1rem;
-        }
-
-        /* --- Redesigned Virtual Keypad for Mobile Touch --- */
-        .keypad-section {
-            text-align: center;
-            margin-top: 10px;
-        }
-
-        .number-display {
-            background: #ffffff;
+        .display-screen {
+            background-color: white;
             border: 2px solid #e2e8f0;
-            border-radius: 20px;
-            margin: 10px 0;
-            font-size: 2.8rem;
-            font-weight: 700;
-            color: #2d3748;
-            text-align: center;
-            min-height: 70px;
+            border-radius: 15px;
+            height: 80px;
             display: flex;
             align-items: center;
             justify-content: center;
-            letter-spacing: 0.15em;
-            transition: all 0.2s ease;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--primary-navy);
+            margin-bottom: 1.5rem;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+            letter-spacing: 2px;
         }
 
-        .number-display.empty {
-            color: #a0aec0;
-            font-weight: 400;
+        .display-screen.empty-state {
+            color: #cbd5e0;
         }
 
-        .virtual-keypad {
+        .keypad-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            width: 100%;
-            max-width: 500px;
-            /* optional: limit on big screens */
-            margin: 0 auto;
-            /* center horizontally */
-
+            gap: 12px;
         }
 
         .key-btn {
-            background: linear-gradient(145deg, #ffffff, #f1f5f9);
-            border: 2px solid #e2e8f0;
-            color: #1a202c;
-            border-radius: 18px;
-            font-size: 1.8rem;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.2rem;
+            font-size: 1.5rem;
             font-weight: 600;
-            aspect-ratio: 1.4 / 1;
-            /* keeps square shape */
-            width: 100%;
-            height: auto;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            user-select: none;
+            color: var(--text-dark);
+            transition: all 0.15s;
+            box-shadow: 0 4px 0 #e2e8f0;
             touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-
-        .key-btn:hover {
-            background: linear-gradient(145deg, #f8fafc, #edf2f7);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
         }
 
         .key-btn:active {
-            transform: translateY(0) scale(0.97);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transform: translateY(4px);
+            box-shadow: none;
         }
 
-        /* Special Keys */
-        .key-btn.action-key {
-            background: linear-gradient(145deg, #fed7d7, #feb2b2);
-            border-color: #fc8181;
-            color: #742a2a;
-            font-weight: 700;
+        .key-btn.btn-action {
+            background-color: #fee2e2;
+            color: #ef4444;
+            border-color: #fecaca;
+            box-shadow: 0 4px 0 #fecaca;
         }
 
-        /* Enter/Call Key */
-        .key-btn.enter-key {
-            background: linear-gradient(145deg, #68d391, #48bb78);
-            border-color: #38a169;
+        .key-btn.btn-enter {
+            background: linear-gradient(135deg, #0d47a1 0%, #1a237e 100%);
             color: white;
-            font-weight: 700;
-            font-size: 1.6rem;
+            border-color: #0d47a1;
+            box-shadow: 0 4px 0 #0a3578;
         }
 
-        /* Ripple effect */
-        .key-btn::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(66, 153, 225, 0.25);
-            transform: translate(-50%, -50%);
-            transition: width 0.3s ease, height 0.3s ease;
+        /* Recent Calls List */
+        .recent-calls-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            height: 100%;
         }
 
-        .key-btn:active::after {
-            width: 160px;
-            height: 160px;
+        .call-item {
+            padding: 12px 16px;
+            border-left: 4px solid var(--secondary-blue);
+            background: var(--soft-blue);
+            margin-bottom: 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .call-item:hover {
+            background: var(--hover-yellow);
+        }
+
+        /* Utils */
+        .card-custom {
+            background: white;
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
         }
 
         /* FLOATING NOTIFICATION SYSTEM - Updated Design */
@@ -347,7 +208,6 @@
             width: 90%;
             max-width: 400px;
             pointer-events: none;
-            /* Allows clicks to pass through when not needed */
         }
 
         .notification {
@@ -362,33 +222,30 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
             pointer-events: auto;
-            /* Re-enable pointer events for the notification itself */
             position: relative;
             overflow: hidden;
         }
 
-        /* Error notification styling */
+        /* Notification Types */
         .notification.error {
             background: linear-gradient(135deg, rgba(254, 215, 215, 0.95), rgba(254, 178, 178, 0.95));
             border-color: rgba(252, 129, 129, 0.3);
             color: #742a2a;
         }
 
-        /* Success notification styling */
         .notification.success {
             background: linear-gradient(135deg, rgba(198, 246, 213, 0.95), rgba(154, 230, 180, 0.95));
             border-color: rgba(104, 211, 145, 0.3);
             color: #22543d;
         }
 
-        /* Info notification styling */
         .notification.info {
             background: linear-gradient(135deg, rgba(190, 227, 248, 0.95), rgba(147, 197, 253, 0.95));
             border-color: rgba(59, 130, 246, 0.3);
             color: #1e3a8a;
         }
 
-        /* Animated entrance */
+        /* Animations */
         @keyframes slideInDown {
             from {
                 opacity: 0;
@@ -422,7 +279,7 @@
             animation: slideOutUp 0.3s ease-in-out forwards;
         }
 
-        /* Progress bar for auto-dismiss */
+        /* Progress bar */
         .notification::before {
             content: '';
             position: absolute;
@@ -468,241 +325,185 @@
         .notification-dismiss:hover {
             opacity: 1;
         }
-
-        /* Animation for new recent calls */
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .recent-call-item.new {
-            animation: slideIn 0.5s ease-out;
-        }
-
-        /* Ripple effect for keypad buttons */
-        .key-btn::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(66, 153, 225, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.3s ease, height 0.3s ease;
-        }
-
-        .key-btn:active::after {
-            width: 120px;
-            height: 120px;
-        }
-
-        /* Container for the navigation links */
-        .navigation-links {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            /* Spacing between the buttons */
-            margin-top: 24px;
-            /* Space below the main form */
-            margin-bottom: 24px;
-            /* Space above the recent calls */
-        }
-
-        /* Style for the navigation buttons */
-        .nav-button {
-            display: block;
-            padding: 16px 20px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            text-decoration: none;
-            text-align: center;
-
-            /* This style matches your "glassmorphic" cards */
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #2d3748;
-            /* Dark text, just like inside your cards */
-
-            border-radius: 16px;
-            /* Matches your card border-radius */
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-
-            transition: all 0.2s ease;
-        }
-
-        .nav-button:hover {
-            transform: translateY(-2px);
-            background: rgba(255, 255, 255, 1);
-            box-shadow: 0 10px 32px rgba(0, 0, 0, 0.15);
-        }
-
-        .nav-button:active {
-            transform: translateY(0);
-        }
-
-        .system-reset {
-            margin-top: 10px;
-            background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
-            color: #c53030;
-            border: 1px solid #feb2b2;
-            cursor: pointer;
-            width: 100%;
-        }
-
-        .system-reset:hover {
-            background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 32px rgba(197, 48, 48, 0.15);
-        }
     </style>
 </head>
 
 <body>
-    <h1>QMS OPD v3.0</h1>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                <path
+                    d="M6.5 2a.5.5 0 0 0 0 1H1v2h5.5l7 7.5V11a.5.5 0 0 0 1 0v-4a.5.5 0 0 0 1 0V2h-9zM1 1v1h5.5L7 2.5V1a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1z" />
+            </svg>
+            QMS OPD 3.0
+        </div>
+        <div class="sidebar-menu">
+            <a href="/" class="nav-link active">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                    </path>
+                </svg>
+                Terminal
+            </a>
+            <a href="/dashboard" class="nav-link">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path
+                        d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z">
+                    </path>
+                </svg>
+                Dashboard
+            </a>
+            <a href="/display" target="_blank" class="nav-link">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path
+                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                    </path>
+                </svg>
+                Open TV Display
+            </a>
+        </div>
 
-    <!-- FLOATING NOTIFICATION CONTAINER - Replaces the old error-container -->
-    <div class="notification-container">
-        <div id="notification" class="notification">
-            <button class="notification-dismiss" onclick="dismissNotification()">&times;</button>
-            <span id="notification-text"></span>
+        <div class="mt-auto p-3">
+            <button class="btn btn-outline-light w-100 btn-sm opacity-50" onclick="confirmRestart()">
+                ⚠️ Restart Server
+            </button>
         </div>
     </div>
 
-    <form id="call-form">
-        <!-- Virtual Keypad Input -->
-        <div class="keypad-section">
-            <label for="number-input-keypad">Nombor Tiket</label>
-            <div class="number-display" id="number-display">
-                <span id="display-text"> </span>
-            </div>
-            <input type="hidden" id="number-input-keypad" maxlength="5" />
-
-            <div class="virtual-keypad">
-                <button type="button" class="key-btn number-key" data-key="1">1</button>
-                <button type="button" class="key-btn number-key" data-key="2">2</button>
-                <button type="button" class="key-btn number-key" data-key="3">3</button>
-                <button type="button" class="key-btn number-key" data-key="4">4</button>
-                <button type="button" class="key-btn number-key" data-key="5">5</button>
-                <button type="button" class="key-btn number-key" data-key="6">6</button>
-                <button type="button" class="key-btn number-key" data-key="7">7</button>
-                <button type="button" class="key-btn number-key" data-key="8">8</button>
-                <button type="button" class="key-btn number-key" data-key="9">9</button>
-                <button type="button" class="key-btn action-key" data-key="clear">C</button>
-                <button type="button" class="key-btn number-key" data-key="0">0</button>
-                <button type="button" class="key-btn enter-key" data-key="enter">✓</button>
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- CUSTOM NOTIFICATION CONTAINER -->
+        <div class="notification-container">
+            <div id="notification" class="notification">
+                <button class="notification-dismiss" onclick="dismissNotification()">&times;</button>
+                <span id="notification-text"></span>
             </div>
         </div>
 
-        <div>
-            <label for="counter-select">Pilih Kaunter</label>
-            <select id="counter-select" aria-label="Pilih Kaunter" required>
-                <option value="1">Kaunter 1</option>
-                <option value="2">Kaunter 2</option>
-                <option value="3">Kaunter 3</option>
-                <option value="4">Kaunter 4</option>
-                <option value="5">Kaunter 5</option>
-            </select>
+        <div class="d-flex justify-content-between align-items-center mb-4 mobile-header d-none">
+            <button class="btn btn-light shadow-sm" onclick="toggleSidebar()">
+                ☰ Menu
+            </button>
+            <h5 class="fw-bold m-0 text-primary">QMS Terminal</h5>
         </div>
 
-        <button type="submit" id="submit-button">Panggil Sekarang</button>
-    </form>
-    <div class="navigation-links">
-        <a href="/display" class="nav-button" target="_blank">
-            🖥️ Open Display
-        </a>
-        <a href="/dashboard" class="nav-button" target="_blank">
-            📊 View Dashboard
-        </a>
-        <button type="button" class="nav-button system-reset" onclick="confirmRestart()">
-            ⚠️ Reset / Restart Server
-        </button>
+        <div class="row g-4">
+            <!-- Left Panel: Keypad & Input -->
+            <div class="col-lg-7">
+                <div class="card-custom p-4 mb-4 h-100">
+                    <div class="text-center mb-3">
+                        <h4 class="fw-bold text-primary">Next Patient</h4>
+                        <p class="text-muted small">Enter ticket number to call</p>
+                    </div>
+
+                    <form id="call-form" onsubmit="return false;">
+                        <div class="keypad-container">
+                            <!-- Helper Input (Hidden) -->
+                            <input type="hidden" id="number-input-keypad" maxlength="5">
+
+                            <!-- Display -->
+                            <div class="display-screen" id="number-display">
+                                <span class="placeholder-text">0000</span>
+                            </div>
+
+                            <!-- Counter Selection -->
+                            <div class="form-floating mb-4">
+                                <select class="form-select border-2" id="counter-select"
+                                    style="font-size: 1.1rem; font-weight: 600;">
+                                    <option value="1">Counter 1</option>
+                                    <option value="2">Counter 2</option>
+                                    <option value="3">Counter 3</option>
+                                    <option value="4">Counter 4</option>
+                                    <option value="5">Counter 5</option>
+                                </select>
+                                <label for="counter-select">Select Counter</label>
+                            </div>
+
+                            <!-- Keypad -->
+                            <div class="keypad-grid">
+                                <button type="button" class="key-btn" data-key="1">1</button>
+                                <button type="button" class="key-btn" data-key="2">2</button>
+                                <button type="button" class="key-btn" data-key="3">3</button>
+                                <button type="button" class="key-btn" data-key="4">4</button>
+                                <button type="button" class="key-btn" data-key="5">5</button>
+                                <button type="button" class="key-btn" data-key="6">6</button>
+                                <button type="button" class="key-btn" data-key="7">7</button>
+                                <button type="button" class="key-btn" data-key="8">8</button>
+                                <button type="button" class="key-btn" data-key="9">9</button>
+                                <button type="button" class="key-btn btn-action" data-key="clear">Clear</button>
+                                <button type="button" class="key-btn" data-key="0">0</button>
+                                <button type="submit" class="key-btn btn-enter" id="submit-button"
+                                    data-key="enter">Call</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Panel: Info & History -->
+            <div class="col-lg-5">
+                <!-- Recent Calls -->
+                <div class="card-custom p-4 mb-4 h-100">
+                    <h5 class="fw-bold mb-3 border-bottom pb-2">🕒 Recent Calls</h5>
+                    <div id="recent-calls-list" class="d-flex flex-column gap-2"
+                        style="max-height: 400px; overflow-y: auto;">
+                        <div class="text-center text-muted py-4 fst-italic">No calls yet this session</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Access QR (Footer style) -->
+            <div class="col-12">
+                <div class="card-custom p-3 bg-light">
+                    <div class="row align-items-center">
+                        <div class="col-md-12">
+                            <h6 class="fw-bold text-dark">📱 Mobile Access</h6>
+                            <p class="small text-muted mb-1">Scan to control from your phone. Ensure you are connected
+                                to Wi-Fi: <strong>Kualiti_Staf</strong> Password: <strong>2024@KualitiHS</strong> </p>
+                            <code class="small bg-white px-2 py-1 rounded border" id="server-url">Loading IP...</code>
+                            <br />
+                            <canvas id="qrcode" style="margin-top: 10px; max-width: 80px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="status" id="status-message"></div>
 
-
-    <div class="status" id="status-message"></div>
-
-    <!-- Recent Calls from This Terminal -->
-    <div class="recent-calls">
-        <h3>🕒 Recent Calls (This Terminal)</h3>
-        <div class="recent-calls-list" id="recent-calls-list">
-            <div class="no-recent-calls">No recent calls yet</div>
-        </div>
-    </div>
-
-
-    <!-- Connection Information -->
-    <div class="connection-info">
-        <h3>📱 Mobile Access</h3>
-        <div class="connection-details">
-            <div class="connection-text">
-                <div>Server Address:</div>
-                <div class="connection-url" id="server-url">Loading...</div>
-                <div style="font-size: 0.875rem; margin-top: 8px; color: #718096;">Scan QR code to connect mobile
-                    devices</div>
-                <div style="font-size: 0.875rem; margin-top: 8px; color: #718096;">Use Wifi "Kualiti_Staf" PW
-                    "2024@KualitiHS"</div>
-            </div>
-            <div class="qr-container">
-                <canvas id="qrcode"></canvas>
-            </div>
-        </div>
-    </div>
-
+    <!-- Scripts -->
+    <script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        // --- Core Logic ---
         const socket = io();
-        const form = document.getElementById("call-form");
-        const counterSelect = document.getElementById("counter-select");
-        const statusMessage = document.getElementById("status-message");
-        const submitButton = document.getElementById("submit-button");
-        const notification = document.getElementById("notification");
-        const notificationText = document.getElementById("notification-text");
-        const recentCallsList = document.getElementById("recent-calls-list");
-        const serverUrlElement = document.getElementById("server-url");
-
-        let terminalRecentCalls = [];
-        let serverInfo = { ip: '', port: '' };
-        let currentNotificationTimeout = null;
-        let isShortcutActive = false;
-        let shortcutTimeout = null;
-
-        // Keypad elements
         const numberInput = document.getElementById("number-input-keypad");
         const numberDisplay = document.getElementById("number-display");
-        const displayText = document.getElementById("display-text");
+        const recentCallsContainer = document.getElementById("recent-calls-list");
 
-        // ENHANCED FLOATING NOTIFICATION SYSTEM
+        // Notification Elements
+        const notification = document.getElementById("notification");
+        const notificationText = document.getElementById("notification-text");
+        let currentNotificationTimeout = null;
+
+        // Custom Notification Logic
         function showNotification(message, type = 'info', duration = 4000, autoDismiss = true) {
-            // Clear any existing timeout
             if (currentNotificationTimeout) {
                 clearTimeout(currentNotificationTimeout);
                 currentNotificationTimeout = null;
             }
 
-            // Reset classes and set new ones
+            // critical: reset display property because hide() sets it to none inline
+            notification.style.display = '';
+
             notification.className = `notification ${type}`;
             notificationText.textContent = message;
-
-            // Show with animation
             notification.classList.add('show');
 
-            // Set up auto-dismiss if enabled
             if (autoDismiss && duration > 0) {
                 notification.classList.add('auto-dismiss');
-                notification.style.setProperty('--duration', `${duration}ms`);
-                notification.querySelector('::before')?.style?.setProperty('animation-duration', `${duration}ms`);
-
+                // CSS animations handle the progress bar if configured
                 currentNotificationTimeout = setTimeout(() => {
                     hideNotification();
                 }, duration);
@@ -716,10 +517,8 @@
                 clearTimeout(currentNotificationTimeout);
                 currentNotificationTimeout = null;
             }
-
             notification.classList.remove('show', 'auto-dismiss');
             notification.classList.add('hide');
-
             setTimeout(() => {
                 notification.classList.remove('hide');
                 notification.style.display = 'none';
@@ -730,525 +529,235 @@
             hideNotification();
         }
 
-        // Replace the old showError and showSuccess functions
-        function showError(message, duration = 5000) {
-            showNotification(message, 'error', duration);
+        // Alias for compatibility if needed, or helper wrappers
+        function showToast(msg, type = 'bg-primary') {
+            // Map Bootstrap classes to our custom types
+            let notifType = 'info';
+            if (type.includes('danger') || type.includes('warning')) notifType = 'error';
+            if (type.includes('success')) notifType = 'success';
+            showNotification(msg, notifType);
         }
 
-        function showSuccess(message, duration = 3000) {
-            showNotification(message, 'success', duration);
-        }
+        // Keyboard state
+        let isShortcutActive = false;
+        let shortcutTimeout = null;
 
-        function showInfo(message, duration = 4000) {
-            showNotification(message, 'info', duration);
-        }
-
-        // Get current number value
-        function getCurrentNumber() {
-            return numberInput.value.trim();
-        }
-
-        // Update display
-        function updateDisplay() {
-            const value = numberInput.value;
-            if (value) {
-                displayText.textContent = value;
-                numberDisplay.classList.remove('empty');
-            } else {
-                displayText.textContent = ' ';
-                numberDisplay.classList.add('empty');
-            }
-        }
-
-        // Clear input
-        function clearInput() {
-            numberInput.value = '';
-            updateDisplay();
-        }
-
-        // Backspace
-        function backspaceInput() {
-            numberInput.value = numberInput.value.slice(0, -1);
-            updateDisplay();
-        }
-
-        // Enhanced keypad event handlers
-        function initializeKeypad() {
-            document.querySelectorAll(".key-btn").forEach(key => {
-                const keyVal = key.dataset.key;
-
-                // Use both touch and click events for better responsiveness
-                key.addEventListener("touchstart", (e) => {
-                    e.preventDefault();
-                    handleKeyPress(keyVal);
-                }, { passive: false });
-
-                key.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    handleKeyPress(keyVal);
-                });
-            });
-        }
-
-        function handleKeyPress(keyVal) {
-            if (keyVal === "clear") {
-                clearInput();
-            } else if (keyVal === "back") {
-                backspaceInput();
-            } else if (keyVal === "enter") {
-                // Handle enter key - trigger form submission without adding to display
-                handleFormSubmission();
-
-            } else if (numberInput.value.length < 5) {
-                // Only add numbers to input, not enter
-                numberInput.value += keyVal;
-                updateDisplay();
-            }
-
-            // Provide haptic feedback on supported devices
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
-        }
-
-        // Separate function to handle form submission logic
-        function handleFormSubmission() {
-            const number = getCurrentNumber();
-            const counter = counterSelect.value;
-
-            // Validate input before submission
-            if (!validateInput(number, counter)) {
-                return;
-            }
-
-            // Check if submit button is disabled
-            if (submitButton.disabled) {
-                return;
-            }
-
-            // Add to recent calls
-            addToRecentCalls(number, counter);
-
-            // Emit socket event
-            socket.emit("call_number", { number, counter });
-
-            // Update status message
-            statusMessage.textContent = `Calling ${number} to Kaunter ${counter}`;
-            statusMessage.style.color = "#38a169";
-
-            // Clear input
-            clearInput();
-
-            // Disable submit button temporarily
-            submitButton.disabled = true;
-            setTimeout(() => {
-                statusMessage.textContent = "";
-                submitButton.disabled = false;
-            }, 1000);
-        }
-
-        // Get server connection info
-        function getServerInfo() {
-            const protocol = window.location.protocol;
-            const hostname = window.location.hostname;
-            const port = window.location.port || (protocol === 'https:' ? '443' : '80');
-
-            serverInfo = {
-                protocol: protocol,
-                hostname: hostname,
-                port: port,
-                fullUrl: `${protocol}//${hostname}${port !== '80' && port !== '443' ? ':' + port : ''}`
-            };
-
-            updateConnectionDisplay();
-            generateQRCode();
-        }
-
-        // Update connection display
-        function updateConnectionDisplay() {
-            serverUrlElement.textContent = serverInfo.fullUrl;
-        }
-
-        // Generate QR code for mobile access
-        function generateQRCode() {
-            const canvas = document.getElementById('qrcode');
-
-            if (typeof QRCode === 'undefined') {
-                console.warn('QRCode library not loaded, trying again in 500ms...');
-                setTimeout(generateQRCode, 500);
-                return;
-            }
-
-            QRCode.toCanvas(canvas, serverInfo.fullUrl, {
-                width: 120,
-                margin: 1,
-                color: {
-                    dark: '#2d3748',
-                    light: '#ffffff'
-                }
-            }, function (error) {
-                if (error) {
-                    console.error('QR Code generation failed:', error);
-                    canvas.style.display = 'none';
-                    const fallbackText = document.createElement('div');
-                    fallbackText.style.cssText = 'font-size: 0.8rem; text-align: center; padding: 10px;';
-                    fallbackText.textContent = 'QR Code unavailable';
-                    canvas.parentNode.appendChild(fallbackText);
-                } else {
-                    console.log('QR Code generated successfully');
-                }
-            });
-        }
-
-        // Client-side validation function
-        function validateInput(number, counter) {
-            if (!number || !number.trim()) {
-                showError('Nombor tiket diperlukan');
-                return false;
-            }
-            if (!counter || !counter.trim()) {
-                showError('Sila pilih kaunter');
-                return false;
-            }
-            if (number.length > 5) {
-                showError('Nombor tiket terlalu panjang (maksimum 5 digit)');
-                return false;
-            }
-            if (!/^\d+$/.test(number)) {
-                showError('Nombor tiket hanya boleh mengandungi angka');
-                return false;
-            }
-            return true;
-        }
-
-        // Add call to recent calls list
-        function addToRecentCalls(number, counter) {
-            const timestamp = new Date();
-            const newCall = {
-                number: number,
-                counter: counter,
-                timestamp: timestamp,
-                id: Date.now()
-            };
-
-            terminalRecentCalls.unshift(newCall);
-            terminalRecentCalls = terminalRecentCalls.slice(0, 3);
-
-            updateRecentCallsDisplay();
-        }
-
-        // Update recent calls display
-        function updateRecentCallsDisplay() {
-            if (terminalRecentCalls.length === 0) {
-                recentCallsList.innerHTML = '<div class="no-recent-calls">No recent calls yet</div>';
-                return;
-            }
-
-            recentCallsList.innerHTML = '';
-            terminalRecentCalls.forEach((call, index) => {
-                const callItem = document.createElement('div');
-                callItem.className = 'recent-call-item';
-                if (index === 0) callItem.classList.add('new');
-
-                const timeAgo = getTimeAgo(call.timestamp);
-
-                callItem.innerHTML = `
-                <div class="recent-call-number">${call.number}</div>
-                <div class="recent-call-details">
-                    Kaunter ${call.counter}
-                    <span class="recent-call-time">${timeAgo}</span>
-                </div>
-            `;
-
-                recentCallsList.appendChild(callItem);
-            });
-        }
-
-        // Get human-readable time difference
-        function getTimeAgo(timestamp) {
-            const now = new Date();
-            const diffMs = now - timestamp;
-            const diffSecs = Math.floor(diffMs / 1000);
-            const diffMins = Math.floor(diffSecs / 60);
-
-            if (diffSecs < 60) {
-                return 'Just now';
-            } else if (diffMins < 60) {
-                return `${diffMins}m ago`;
-            } else {
-                return timestamp.toLocaleTimeString('en-US', {
-                    hour12: false,
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            }
-        }
-
-        // Update time stamps periodically
-        function updateTimeStamps() {
-            if (terminalRecentCalls.length > 0) {
-                updateRecentCallsDisplay();
-            }
-        }
-
-        form.addEventListener("submit", (event) => {
-            event.preventDefault();
-            handleFormSubmission();
-        });
-
-        // Keyboard shortcuts
+        // Keyboard Listener
         document.addEventListener("keydown", function (event) {
-            // Handle active shortcut mode (+ has been pressed)
+            // Shortcut Mode (Counter Switching)
             if (isShortcutActive) {
-                // If 1-5 is pressed, select counter
                 if (event.key >= '1' && event.key <= '5') {
                     event.preventDefault();
-                    counterSelect.value = event.key;
+                    document.getElementById('counter-select').value = event.key;
 
-                    // Visual feedback for successful selection
-                    const label = document.querySelector("label[for='counter-select']");
-                    label.style.color = "#38a169"; // Green
-                    setTimeout(() => { label.style.color = ""; }, 500);
-                } else {
-                    // Any other key just cancels, providing feedback (revert color)
-                    const label = document.querySelector("label[for='counter-select']");
-                    label.style.color = "";
+                    // Visual feedback
+                    const select = document.getElementById('counter-select');
+                    const originalBorder = select.style.borderColor;
+                    select.style.borderColor = '#38a169';
+                    select.style.boxShadow = '0 0 0 0.25rem rgba(56, 161, 105, 0.25)';
+                    setTimeout(() => {
+                        select.style.borderColor = originalBorder;
+                        select.style.boxShadow = '';
+                    }, 500);
                 }
 
                 // Reset mode
                 isShortcutActive = false;
-                if (shortcutTimeout) {
-                    clearTimeout(shortcutTimeout);
-                    shortcutTimeout = null;
-                }
-
-                // If we handled a valid counter key, we stop here. 
-                // If it was invalid, we also stop here to prevent it from being entered as a ticket number
-                // (This matches user expectation: "+ then number" should handle counter or fail, not type number)
+                if (shortcutTimeout) clearTimeout(shortcutTimeout);
                 return;
             }
 
-            // Number keys
-            if (event.key >= '0' && event.key <= '9' && numberInput.value.length < 5) {
-                numberInput.value += event.key;
+            // Normal Typing
+            if (event.key >= '0' && event.key <= '9') {
+                if (numberInput.value.length < 5) {
+                    numberInput.value += event.key;
+                    updateDisplay();
+                }
+            }
+            else if (event.key === "Backspace") {
+                numberInput.value = numberInput.value.slice(0, -1);
                 updateDisplay();
             }
-            // Backspace
-            else if (event.key === "Backspace") {
-                backspaceInput();
-            }
-            // Enter key submits
             else if (event.key === "Enter") {
                 event.preventDefault();
-                handleFormSubmission();
+                submitCall();
             }
-            // ESC key dismisses notification
             else if (event.key === "Escape") {
-                dismissNotification();
+                // Dismiss anything if needed
             }
-            // Counter shortcuts (+ followed by number)
             else if (event.key === '+') {
                 event.preventDefault();
                 isShortcutActive = true;
-                const label = document.querySelector("label[for='counter-select']");
-                label.style.color = "#ed8936";
+
+                // Visual feedback to indicate ready for counter number
+                const select = document.getElementById('counter-select');
+                const originalBorder = select.style.borderColor;
+                select.style.borderColor = '#ed8936'; // Orange warning color
+                select.style.boxShadow = '0 0 0 0.25rem rgba(237, 137, 54, 0.25)';
 
                 if (shortcutTimeout) clearTimeout(shortcutTimeout);
                 shortcutTimeout = setTimeout(() => {
                     isShortcutActive = false;
-                    label.style.color = "";
-                }, 1000);
+                    select.style.borderColor = originalBorder;
+                    select.style.boxShadow = '';
+                }, 1000); // 1 second window
             }
         });
 
-        // SocketIO Event Handlers
-        socket.on("connect", () => {
-            console.log("Connected to server");
-            showSuccess("Connected to Server ✅");
-        });
-
-        socket.on("disconnect", () => {
-            console.log("Disconnected from server");
-            showError("Disconnected from server ❌", 8000); // 0 = no auto-dismiss
-        });
-
-        socket.on("error", (data) => {
-            console.error("Server error:", data.message);
-            showError("Server error: " + data.message);
-        });
-
-        socket.on("connect_error", (error) => {
-            console.error("Connection error:", error);
-            showError("Connection error - Please check network", 8000);
-        });
-
-        socket.on("reconnect", (attemptNumber) => {
-            console.log("Reconnected after", attemptNumber, "attempts");
-            showSuccess("Reconnected successfully! 🔄");
-            dismissNotification(); // Dismiss any previous error messages
-        });
-
-        socket.on("reconnecting", (attemptNumber) => {
-            console.log("Reconnection attempt", attemptNumber);
-            showInfo(`Reconnecting... (attempt ${attemptNumber})`, 0);
-        });
-
-        // Wakelock functionality to prevent device sleep
-        let wakeLock = null;
-        let wakeLockSupported = false;
-
-        async function requestWakeLock() {
-            if (!('wakeLock' in navigator)) {
-                console.log('Wake Lock API not supported');
-                return false;
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Restore last selected counter
+            const savedCounter = localStorage.getItem('lastCounter');
+            if (savedCounter) {
+                document.getElementById('counter-select').value = savedCounter;
             }
 
-            try {
-                wakeLock = await navigator.wakeLock.request('screen');
-                wakeLockSupported = true;
+            // Render QR Code
+            generateQRCode();
 
-                wakeLock.addEventListener('release', () => {
-                    console.log('Wake Lock was released');
-                });
-
-                console.log('Wake Lock is active - screen will stay on');
-                showSuccess('Screen lock disabled - device will stay awake 📱', 2500);
-
-                return true;
-            } catch (err) {
-                console.error('Failed to request wake lock:', err);
-                showError(`Wake lock failed: ${err.message}`);
-                return false;
-            }
-        }
-
-        async function releaseWakeLock() {
-            if (wakeLock) {
-                try {
-                    await wakeLock.release();
-                    wakeLock = null;
-                    console.log('Wake Lock released');
-                } catch (err) {
-                    console.error('Failed to release wake lock:', err);
-                }
-            }
-        }
-
-        // Re-request wake lock when page becomes visible (handles tab switching)
-        document.addEventListener('visibilitychange', async () => {
-            if (wakeLockSupported && document.visibilityState === 'visible') {
-                await requestWakeLock();
-            }
-        });
-
-        // Initialize everything when page loads
-        document.addEventListener('DOMContentLoaded', function () {
-            setTimeout(() => {
-                getServerInfo();
-            }, 100);
-
+            // Add Keypad Listeners
             initializeKeypad();
+
             updateDisplay();
-
-            setInterval(updateTimeStamps, 60000);
-
-            // Load saved recent calls
-            const savedCalls = localStorage.getItem('terminalRecentCalls');
-            if (savedCalls) {
-                try {
-                    const parsed = JSON.parse(savedCalls);
-                    terminalRecentCalls = parsed.map(call => ({
-                        ...call,
-                        timestamp: new Date(call.timestamp)
-                    })).slice(0, 3);
-                    updateRecentCallsDisplay();
-                } catch (e) {
-                    console.log('Failed to load saved recent calls');
-                }
-            }
-
-            // Request wake lock after user interaction
-            document.addEventListener('click', requestWakeLock, { once: true });
-            document.addEventListener('touchstart', requestWakeLock, { once: true });
         });
 
-        // Save recent calls before page unload
-        window.addEventListener('beforeunload', function () {
-            localStorage.setItem('terminalRecentCalls', JSON.stringify(terminalRecentCalls));
-        });
-
-        // Close notification when clicking outside of it (optional)
-        document.addEventListener('click', function (event) {
-            if (!notification.contains(event.target) && notification.classList.contains('show')) {
-                // Only auto-close info notifications, not errors
-                if (notification.classList.contains('info')) {
-                    dismissNotification();
-                }
-            }
-        });
-
-        // --- Server Restart Functionality ---
-        function confirmRestart() {
-            if (confirm("⚠️ WARNING: This will restart the server process.\n\nAll connected displays and staff panels will disconnect momentarily.\n\nAre you sure you want to proceed?")) {
-                restartServer();
-            }
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
         }
 
-        function restartServer() {
-            showInfo("Initiating system restart... 🔄", 0);
-
-            fetch('/api/restart', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        showSuccess("System restarting... Please wait. ⏳", 20000);
-                        pollServerHealth();
-                    } else {
-                        showError("Restart failed: " + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    // Even if fetch fails (connection closed), server might be restarting
-                    showInfo("Server restarting... Waiting for connection.", 0);
-                    pollServerHealth();
+        // --- Keypad Functions ---
+        function initializeKeypad() {
+            document.querySelectorAll('.key-btn').forEach(btn => {
+                const action = () => handleKeyPress(btn.dataset.key);
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    action();
                 });
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    action();
+                });
+            });
         }
 
-        // Poll server health until it responds, then reload
-        function pollServerHealth() {
-            let attempts = 0;
-            const maxAttempts = 60; // Wait up to 60 seconds
-
-            const pollInterval = setInterval(() => {
-                attempts++;
-
-                // Try to fetch health endpoint
-                fetch('/health', { cache: 'no-store' })
-                    .then(response => {
-                        if (response.ok) {
-                            clearInterval(pollInterval);
-                            showSuccess("Server is back online! Reloading...", 1000);
-                            setTimeout(() => {
-                                location.reload();
-                            }, 1000);
-                        }
-                    })
-                    .catch(e => {
-                        console.log(`Waiting for server... attempt ${attempts}/${maxAttempts}`);
-                        if (attempts >= maxAttempts) {
-                            clearInterval(pollInterval);
-                            showError("Server restart timed out. Please refresh manually.", 0);
-                        }
-                    });
-            }, 1000);
+        function handleKeyPress(key) {
+            if (key === 'clear') {
+                numberInput.value = '';
+            } else if (key === 'enter') {
+                submitCall();
+                return;
+            } else {
+                if (numberInput.value.length < 5) {
+                    numberInput.value += key;
+                }
+            }
+            updateDisplay();
         }
 
+        function updateDisplay() {
+            const val = numberInput.value;
+            if (val) {
+                numberDisplay.textContent = val;
+                numberDisplay.classList.remove('empty-state');
+            } else {
+                numberDisplay.innerHTML = '<span class="text-muted opacity-25">0000</span>';
+                numberDisplay.classList.add('empty-state');
+            }
+        }
+
+        // --- Call Submission ---
+        function submitCall() {
+            const number = numberInput.value;
+            const counter = document.getElementById('counter-select').value;
+
+            if (!number) {
+                showToast('Please enter a ticket number', 'bg-warning');
+                return;
+            }
+
+            // Save counter preference
+            localStorage.setItem('lastCounter', counter);
+
+            // Emit Socket Event
+            // Determine counter name text
+            const counterText = `${counter}`; // Or use selected option text
+
+            socket.emit('call_number', {
+                number: number,
+                counter: counterText
+            });
+
+            // Optimistic UI update
+            addToRecentCalls(number, counterText);
+            showToast(`Calling ${number} at Kaunter ${counterText}`, 'bg-success');
+
+            // Clear input for next
+            numberInput.value = '';
+            updateDisplay();
+        }
+
+        // --- Socket Events ---
+        socket.on('connect', () => {
+            // console.log('Connected to server');
+        });
+
+        socket.on('error', (data) => {
+            showToast(data.message || 'Error occurred', 'bg-danger');
+        });
+
+        // --- More Helpers ---
+
+        function addToRecentCalls(number, counter) {
+            const time = new Date().toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit' });
+
+            // Remove placeholder
+            const placeholder = recentCallsContainer.querySelector('.fst-italic');
+            if (placeholder) placeholder.remove();
+
+            const div = document.createElement('div');
+            div.className = 'call-item d-flex justify-content-between align-items-center animate__animated animate__fadeIn';
+            div.innerHTML = `
+                <div>
+                    <span class="fw-bold fs-5">${number}</span>
+                    <small class="d-block text-muted opacity-75">Kaunter ${counter}</small>
+                </div>
+                <span class="badge bg-white text-dark border">${time}</span>
+            `;
+
+            recentCallsContainer.prepend(div);
+
+            // Limit to 10
+            if (recentCallsContainer.children.length > 8) {
+                recentCallsContainer.lastElementChild.remove();
+            }
+        }
+
+        function generateQRCode() {
+            const ip = location.hostname;
+            const port = location.port;
+            const url = `${location.protocol}//${ip}:${port}`;
+
+            document.getElementById('server-url').textContent = url;
+
+            QRCode.toCanvas(document.getElementById("qrcode"), url, {
+                width: 80,
+                color: {
+                    dark: "#1a237e",
+                    light: "#ffffff"
+                }
+            }, function (error) {
+                if (error) console.error(error);
+            });
+        }
+
+        function confirmRestart() {
+            if (confirm("Are you sure you want to RESTART the server logic? Only do this if the display is stuck.")) {
+                fetch('/api/restart', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => showToast('Server restarting...', 'bg-danger'))
+                    .catch(err => showToast('Failed to restart', 'bg-danger'));
+            }
+        }
     </script>
 </body>
 

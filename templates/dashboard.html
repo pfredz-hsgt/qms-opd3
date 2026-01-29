@@ -1,616 +1,624 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Call Logs Dashboard</title>
+    <title>QMS Analytics Dashboard</title>
+    <!-- Local Bootstrap CSS -->
+    <link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --primary-navy: #1a237e;
+            --secondary-blue: #0d47a1;
+            --soft-blue: #e8eaf6;
+            --accent-cyan: #00bcd4;
+            --text-dark: #2c3e50;
+            --off-white: #f8f9fa;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--off-white);
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, var(--primary-navy) 0%, var(--secondary-blue) 100%);
+            color: white;
             min-height: 100vh;
-            padding: 20px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            transition: all 0.3s;
+            z-index: 1000;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+        .sidebar-brand {
+            padding: 1.5rem;
+            font-size: 1.5rem;
             font-weight: 700;
-        }
-
-        .header p {
-            opacity: 0.9;
-            font-size: 1.1em;
-        }
-
-        .main-content {
-            padding: 30px;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             color: white;
-            padding: 25px;
-            border-radius: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-menu {
+            padding: 1rem 0;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.8rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            border-left: 4px solid var(--accent-cyan);
+        }
+
+        .nav-link i {
+            width: 20px;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(240, 147, 251, 0.3);
-            transform: translateY(0);
-            transition: all 0.3s ease;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 260px;
+            padding: 2rem;
+            transition: all 0.3s;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .sidebar {
+                margin-left: -260px;
+            }
+
+            .sidebar.active {
+                margin-left: 0;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+        }
+
+        /* Cards */
+        .stat-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+            background: white;
+            height: 100%;
         }
 
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(240, 147, 251, 0.4);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
         }
 
-        .stat-card.primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-        }
-
-        .stat-card.success {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            box-shadow: 0 10px 30px rgba(79, 172, 254, 0.3);
-        }
-
-        .stat-card h3 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
-
-        .stat-card p {
-            opacity: 0.9;
-            font-size: 1.1em;
-        }
-
-        .controls {
+        .icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
             display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 30px;
             align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
         }
 
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
+        .bg-soft-blue {
+            background-color: var(--soft-blue);
+            color: var(--primary-navy);
         }
 
-        .control-group label {
-            font-weight: 600;
-            color: #333;
-            font-size: 0.9em;
+        .bg-soft-success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
         }
 
-        input[type="date"] {
-            padding: 12px 15px;
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
-            font-size: 1em;
-            transition: all 0.3s ease;
+        .bg-soft-info {
+            background-color: #e0f7fa;
+            color: #0097a7;
+        }
+
+        /* Tables */
+        .table-custom {
             background: white;
-        }
-
-        input[type="date"]:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .btn {
-            padding: 12px 25px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 1em;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn.secondary {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        .btn.secondary:hover {
-            box-shadow: 0 10px 25px rgba(240, 147, 251, 0.3);
-        }
-
-        .table-container {
-            background: white;
-            border-radius: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            margin-bottom: 30px;
         }
 
-        .table-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .table-custom thead {
+            background-color: var(--primary-navy);
             color: white;
-            padding: 20px;
         }
 
-        .table-header h2 {
-            font-size: 1.5em;
+        .table-custom th {
             font-weight: 600;
+            padding: 1rem;
+            border: none;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        .table-custom td {
+            padding: 1rem;
+            vertical-align: middle;
+            border-bottom: 1px solid #eee;
         }
 
-        th, td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        th {
-            background: #f8f9fa;
-            font-weight: 600;
-            color: #333;
+        .badge-counter {
             font-size: 0.9em;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            padding: 0.5em 0.8em;
+            border-radius: 6px;
         }
 
-        tr:hover {
-            background: #f8f9ff;
-        }
-
-        .counter-badge {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
+        .counter-badge-pill {
+            background-color: var(--soft-blue);
+            color: var(--primary-navy);
             font-weight: 600;
-            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
         }
 
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
+        /* Controls */
+        .filter-bar {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            margin-bottom: 2rem;
         }
 
-        .spinner {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 15px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .error {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            text-align: center;
-        }
-
-        .no-data {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-
+        /* Chart */
         .chart-container {
             background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            margin-bottom: 30px;
-            overflow: hidden;
-        }
-
-        .chart-header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            padding: 20px;
-        }
-
-        .chart-content {
-            padding: 20px;
-            height: 300px;
-        }
-
-        .counter-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            padding: 20px;
-        }
-
-        .counter-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border-left: 4px solid #667eea;
-        }
-
-        .counter-name {
-            font-weight: 600;
-            color: #333;
-        }
-
-        .counter-count {
-            background: #667eea;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-weight: 600;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                border-radius: 15px;
-            }
-
-            .main-content {
-                padding: 20px;
-            }
-
-            .header {
-                padding: 20px;
-            }
-
-            .header h1 {
-                font-size: 2em;
-            }
-
-            .controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .control-group {
-                width: 100%;
-            }
-
-            table {
-                font-size: 0.9em;
-            }
-
-            th, td {
-                padding: 10px 8px;
-            }
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+            position: relative;
+            height: 350px;
         }
     </style>
 </head>
+
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>📊 Call Logs Dashboard</h1>
-            <p>Monitor and analyze your call queue data in real-time</p>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                <path
+                    d="M6.5 2a.5.5 0 0 0 0 1H1v2h5.5l7 7.5V11a.5.5 0 0 0 1 0v-4a.5.5 0 0 0 1 0V2h-9zM1 1v1h5.5L7 2.5V1a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1z" />
+            </svg>
+            QMS OPD 3.0
+        </div>
+        <div class="sidebar-menu">
+            <a href="/" class="nav-link">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                    </path>
+                </svg>
+                Terminal
+            </a>
+            <a href="#" class="nav-link active">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path
+                        d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z">
+                    </path>
+                </svg>
+                Dashboard
+            </a>
+            <a href="/display" target="_blank" class="nav-link">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path
+                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                    </path>
+                </svg>
+                Open TV Display
+            </a>
+        </div>
+        <div class="mt-auto p-3">
+            <button class="btn btn-outline-light w-100 btn-sm opacity-50" onclick="confirmRestart()">
+                ⚠️ Restart Server
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Mobile Toggle -->
+        <button class="btn btn-outline-primary d-lg-none mb-3" onclick="toggleSidebar()">
+            ☰ Menu
+        </button>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold mb-1">Dashboard Overview</h2>
+                <p class="text-muted">Real-time stats and call analytics</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-light border" onclick="location.reload()">
+                    ↻ Refresh
+                </button>
+                <div class="dropdown">
+                    <button class="btn btn-primary" onclick="exportToExcel()">
+                        📥 Export Report
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <div class="main-content">
-            <!-- Statistics Cards -->
-            <div class="stats-grid">
-                <div class="stat-card primary">
-                    <h3 id="today-total">-</h3>
-                    <p>Calls Today</p>
-                </div>
-                <div class="stat-card success">
-                    <h3 id="total-counters">-</h3>
-                    <p>Active Counters</p>
-                </div>
-                <div class="stat-card">
-                    <h3 id="filtered-total">-</h3>
-                    <p>Filtered Results</p>
+        <!-- Filter Bar -->
+        <div class="filter-bar d-flex flex-wrap gap-3 align-items-end">
+            <div class="flex-grow-1">
+                <label class="form-label text-muted small fw-bold text-uppercase">Date Filter</label>
+                <div class="input-group">
+                    <input type="date" id="date-filter" class="form-control">
+                    <button class="btn btn-outline-secondary" onclick="loadDataForDate()">Apply Filter</button>
                 </div>
             </div>
-
-            <!-- Controls -->
-            <div class="controls">
-                <div class="control-group">
-                    <label for="date-filter">Filter by Date:</label>
-                    <input type="date" id="date-filter" />
-                </div>
-                <button class="btn" onclick="loadDataForDate()">Filter</button>
-                <button class="btn secondary" onclick="loadTodayData()">Today</button>
-                <button class="btn secondary" onclick="loadRecentData()">Recent (All)</button>
-                <a href="/" class="btn" style="margin-left: auto;">← Back to Staff</a>
+            <div>
+                <button class="btn btn-outline-primary" onclick="loadTodayData()">Today's Data</button>
+                <button class="btn btn-outline-secondary" onclick="loadRecentData()">Show All Recent</button>
             </div>
+        </div>
 
-            <!-- Counter Usage Chart -->
-            <div class="chart-container">
-                <div class="chart-header">
-                    <h2>📈 Counter Usage Statistics</h2>
+        <!-- Stats Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="stat-card p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1">Calls Today</p>
+                            <h2 class="fw-bold mb-0" id="today-total">-</h2>
+                        </div>
+                        <div class="icon-box bg-soft-blue">
+                            📞
+                        </div>
+                    </div>
                 </div>
-                <div class="counter-stats" id="counter-stats">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>Loading counter statistics...</p>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1">Active Counters</p>
+                            <h2 class="fw-bold mb-0" id="total-counters">-</h2>
+                        </div>
+                        <div class="icon-box bg-soft-success">
+                            🏢
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1">Filtered Results</p>
+                            <h2 class="fw-bold mb-0" id="filtered-total">-</h2>
+                        </div>
+                        <div class="icon-box bg-soft-info">
+                            🔍
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Left Column: Chart -->
+            <div class="col-lg-8">
+                <div class="chart-container">
+                    <h5 class="fw-bold mb-3">Call Volume Statistics</h5>
+                    <canvas id="callsChart"></canvas>
+                </div>
+
+                <div class="table-custom">
+                    <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0">Detailed Call Logs</h5>
+                        <span class="badge bg-light text-dark border" id="table-count-badge">0 records</span>
+                    </div>
+                    <div class="table-responsive" id="table-content">
+                        <!-- Table injected via JS -->
+                        <div class="text-center p-5 text-muted">
+                            <div class="spinner-border text-primary mb-2" role="status"></div>
+                            <p>Loading data...</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Call Logs Table -->
-            <div class="table-container">
-                <div class="table-header">
-                    <h2>📋 Call Logs</h2>
-                </div>
-                <div id="table-content">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>Loading call logs...</p>
+            <!-- Right Column: Counter Stats -->
+            <div class="col-lg-4">
+                <div class="bg-white rounded-4 shadow-sm p-4 h-100">
+                    <h5 class="fw-bold mb-4">Counter Performance</h5>
+                    <div id="counter-stats" class="d-flex flex-column gap-3">
+                        <!-- Counter stats injected here -->
+                        <div class="text-center p-3 text-muted">Loading...</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        let currentData = [];
-        let todayStats = {};
+    <!-- Scripts -->
+    <script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/vendor/chartjs/chart.umd.min.js"></script>
+    <script src="/static/vendor/sheetjs/xlsx.full.min.js"></script>
 
-        // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            // Set today's date as default
+    <script>
+        // State
+        let currentData = [];
+        let myChart = null;
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', function () {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('date-filter').value = today;
-            
-            // Load initial data
+
             loadTodayData();
             loadStats();
         });
 
-        // Load today's data
+        // Sidebar Toggle
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+
+        // --- Data Loading Functions ---
+
         async function loadTodayData() {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('date-filter').value = today;
             await loadDataForDate();
         }
 
-        // Load recent data (all)
         async function loadRecentData() {
             document.getElementById('date-filter').value = '';
-            showLoading();
-            
+            showLoading(true);
             try {
-                const response = await fetch('/api/logs/recent?limit=50');
+                const response = await fetch('/api/logs/recent?limit=500');
                 const result = await response.json();
-                
                 if (result.status === 'success') {
-                    currentData = result.data;
-                    renderTable(currentData);
-                    updateFilteredStats(currentData.length);
-                    renderCounterStats(currentData);
-                } else {
-                    showError('Failed to load recent data: ' + result.message);
+                    processData(result.data);
                 }
             } catch (error) {
-                console.error('Error loading recent data:', error);
-                showError('Failed to load recent data. Please try again.');
+                console.error(error);
             }
+            showLoading(false);
         }
 
-        // Load data for specific date
         async function loadDataForDate() {
-            const dateInput = document.getElementById('date-filter');
-            const selectedDate = dateInput.value;
-            
-            if (!selectedDate) {
-                await loadRecentData();
-                return;
-            }
-            
-            showLoading();
-            
+            const selectedDate = document.getElementById('date-filter').value;
+            if (!selectedDate) return loadRecentData();
+
+            showLoading(true);
             try {
                 const response = await fetch(`/api/logs/date/${selectedDate}`);
                 const result = await response.json();
-                
                 if (result.status === 'success') {
-                    currentData = result.data;
-                    renderTable(currentData);
-                    updateFilteredStats(currentData.length);
-                    renderCounterStats(currentData);
-                } else {
-                    showError('Failed to load data: ' + result.message);
+                    processData(result.data);
+
+                    // Also try to update chart with context if possible, 
+                    // for now just chart the current selection vs typical? 
+                    // Or we stick to the plan: "Today" vs "Last 5 Days" chart is separate.
+                    // Let's load the chart data separately to ensure it is always "Trend" based
+                    updateChartWithHistory();
                 }
             } catch (error) {
-                console.error('Error loading data:', error);
-                showError('Failed to load data. Please try again.');
+                console.error(error);
+            }
+            showLoading(false);
+        }
+
+        // Function to fetch last 5 days data for the chart
+        async function updateChartWithHistory() {
+            // We want to show Today and previous 4 days
+            const labels = [];
+            const dataPoints = [];
+            const datesToFetch = [];
+
+            for (let i = 4; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                datesToFetch.push(dateStr);
+                labels.push(i === 0 ? 'Today' : dateStr.slice(5)); // Show MM-DD
+            }
+
+            // Fetch in parallel
+            try {
+                const promises = datesToFetch.map(date =>
+                    fetch(`/api/logs/date/${date}`)
+                        .then(res => res.json())
+                        .then(res => res.data ? res.data.length : 0)
+                        .catch(() => 0)
+                );
+
+                const results = await Promise.all(promises);
+
+                renderChart(labels, results);
+
+            } catch (e) {
+                console.error("Failed to load chart history", e);
             }
         }
 
-        // Load statistics
         async function loadStats() {
             try {
                 const response = await fetch('/api/logs/stats');
                 const result = await response.json();
-                
                 if (result.status === 'success') {
-                    const stats = result.data;
-                    todayStats = stats.today;
-                    
-                    document.getElementById('today-total').textContent = stats.today.total_calls;
-                    document.getElementById('total-counters').textContent = Object.keys(stats.today.counter_usage).length;
+                    const stats = result.data.today || {};
+                    document.getElementById('today-total').textContent = stats.total_calls || 0;
+                    if (stats.counter_usage) {
+                        document.getElementById('total-counters').textContent = Object.keys(stats.counter_usage).length;
+                    }
                 }
-            } catch (error) {
-                console.error('Error loading stats:', error);
-            }
+            } catch (error) { console.error(error); }
         }
 
-        // Render table
+        // --- Processing & Rendering ---
+
+        function processData(data) {
+            currentData = data;
+            document.getElementById('filtered-total').textContent = data.length;
+            document.getElementById('table-count-badge').textContent = `${data.length} records`;
+
+            renderTable(data);
+            renderCounterStats(data);
+        }
+
         function renderTable(data) {
             const container = document.getElementById('table-content');
-            
-            if (data.length === 0) {
-                container.innerHTML = `
-                    <div class="no-data">
-                        <h3>📭 No calls found</h3>
-                        <p>No call logs found for the selected criteria.</p>
-                    </div>
-                `;
+            if (!data || data.length === 0) {
+                container.innerHTML = `<div class="text-center p-5 text-muted">📭 No records found</div>`;
                 return;
             }
-            
-            const tableHTML = `
-                <table>
-                    <thead>
+
+            let html = `
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
                         <tr>
                             <th>Time</th>
-                            <th>Date</th>
                             <th>Number</th>
                             <th>Counter</th>
+                            <th>Date</th>
                             <th>Day</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        ${data.map(call => `
-                            <tr>
-                                <td><strong>${call.time}</strong></td>
-                                <td>${call.date}</td>
-                                <td><strong>${call.number}</strong></td>
-                                <td><span class="counter-badge">${call.counter}</span></td>
-                                <td>${call.day_of_week}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-            
-            container.innerHTML = tableHTML;
+                    <tbody>`;
+
+            data.forEach(row => {
+                html += `
+                    <tr>
+                        <td class="fw-bold text-primary">${row.time}</td>
+                        <td><span class="badge bg-light text-dark border  fs-6">${row.number}</span></td>
+                        <td><span class="counter-badge-pill">Kaunter ${row.counter}</span></td>
+                        <td class="text-muted small">${row.date}</td>
+                        <td class="text-muted small">${row.day_of_week}</td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
         }
 
-        // Render counter statistics
         function renderCounterStats(data) {
             const container = document.getElementById('counter-stats');
-            
-            // Count calls per counter
-            const counterCounts = {};
-            data.forEach(call => {
-                counterCounts[call.counter] = (counterCounts[call.counter] || 0) + 1;
-            });
-            
-            if (Object.keys(counterCounts).length === 0) {
-                container.innerHTML = `
-                    <div class="no-data">
-                        <p>No counter data available</p>
-                    </div>
-                `;
+            const counts = {};
+            data.forEach(d => counts[d.counter] = (counts[d.counter] || 0) + 1);
+
+            if (Object.keys(counts).length === 0) {
+                container.innerHTML = `<p class="text-muted">No active counters</p>`;
                 return;
             }
-            
-            // Sort by count (descending)
-            const sortedCounters = Object.entries(counterCounts)
-                .sort(([,a], [,b]) => b - a);
-            
-            const statsHTML = sortedCounters.map(([counter, count]) => `
-                <div class="counter-item">
-                    <span class="counter-name">${counter}</span>
-                    <span class="counter-count">${count}</span>
-                </div>
-            `).join('');
-            
-            container.innerHTML = statsHTML;
+
+            const sorted = Object.entries(counts).sort(([, a], [, b]) => b - a);
+
+            container.innerHTML = sorted.map(([counter, count], index) => {
+                const percent = Math.round((count / data.length) * 100);
+                return `
+                    <div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="fw-bold">Kaunter ${counter}</span>
+                            <span class="badge bg-primary rounded-pill">${count}</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar" role="progressbar" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
-        // Update filtered stats
-        function updateFilteredStats(count) {
-            document.getElementById('filtered-total').textContent = count;
-        }
+        function renderChart(labels, data) {
+            const ctx = document.getElementById('callsChart');
 
-        // Show loading state
-        function showLoading() {
-            document.getElementById('table-content').innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>Loading call logs...</p>
-                </div>
-            `;
-            
-            document.getElementById('counter-stats').innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>Loading statistics...</p>
-                </div>
-            `;
-        }
-
-        // Show error
-        function showError(message) {
-            document.getElementById('table-content').innerHTML = `
-                <div class="error">
-                    <strong>❌ Error:</strong> ${message}
-                </div>
-            `;
-            
-            document.getElementById('counter-stats').innerHTML = `
-                <div class="error">
-                    <strong>❌ Error:</strong> Failed to load counter statistics
-                </div>
-            `;
-        }
-
-        // Auto-refresh every 30 seconds if showing today's data
-        setInterval(() => {
-            const dateInput = document.getElementById('date-filter');
-            const today = new Date().toISOString().split('T')[0];
-            
-            if (dateInput.value === today) {
-                loadStats();
-                loadDataForDate();
+            if (myChart) {
+                myChart.destroy();
             }
-        }, 30000);
+
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Calls Processed',
+                        data: data,
+                        backgroundColor: '#1a237e',
+                        borderRadius: 5,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { borderDash: [2, 4] } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // --- Export ---
+
+        function exportToExcel() {
+            if (!currentData || currentData.length === 0) {
+                alert("No data to export!");
+                return;
+            }
+
+            const ws = XLSX.utils.json_to_sheet(currentData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Call Logs");
+
+            const filename = `Call_Logs_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, filename);
+        }
+
+        function showLoading(isLoading) {
+            const el = document.getElementById('table-content');
+            if (isLoading) {
+                el.innerHTML = `
+                    <div class="text-center p-5 text-muted">
+                        <div class="spinner-border text-primary mb-2" role="status"></div>
+                        <p>Loading...</p>
+                    </div>`;
+            }
+        }
+
+        function confirmRestart() {
+            if (confirm("Are you sure you want to RESTART the server logic? Only do this if the display is stuck.")) {
+                fetch('/api/restart', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => showToast('Server restarting...', 'bg-danger'))
+                    .catch(err => showToast('Failed to restart', 'bg-danger'));
+            }
+        }
     </script>
 </body>
+
 </html>
