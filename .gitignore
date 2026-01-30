@@ -22,6 +22,10 @@ share/python-wheels/
 *.egg
 MANIFEST
 .firebase
+serviceAccountKey.json
+firebase-config.txt
+firebase-messaging-sw.js
+
 
 # Virtual Environment
 venv/
