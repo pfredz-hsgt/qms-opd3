@@ -46,3 +46,4 @@ archive/
 deploy/
 media/
 .firebase/hosting.cHVibGlj.cache
+serviceAccountKey.json

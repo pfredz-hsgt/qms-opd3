@@ -7,6 +7,7 @@ This system provides a seamless experience for managing patient queues with a mo
 ## ✨ Key Features
 
 *   **Real-Time Sync**: Instant updates across all connected devices using WebSockets.
+*   **Cloud Integration**: Seamless synchronization with **Firebase Realtime Database** for remote monitoring and mobile app integration.
 *   **Modern Staff Interface**: 
     *   Responsive design for desktop and mobile.
     *   **Virtual Keypad** with touch support.
@@ -60,6 +61,12 @@ Accessed via `http://<ip-address>:5000/dashboard`.
     *   Calls per counter.
     *   Recent history log.
 
+### 5. Patient Portal
+*   **Production URL**: [https://qms-hybrid.firebaseapp.com/](https://qms-hybrid.firebaseapp.com/)
+*   **Local Test Route**: `http://<ip-address>:5000/portal`
+    *   *Note: The local route is for development and testing purposes only.*
+*   A mobile-friendly interface for patients to check the current calling status on their own devices.
+
 ## 💻 Manual Installation (Developer)
 
 If you wish to run from source or modify the code:
@@ -68,7 +75,7 @@ If you wish to run from source or modify the code:
 
 1.  **Install Dependencies**:
     ```bash
-    pip install flask flask-socketio eventlet
+    pip install flask flask-socketio eventlet firebase-admin
     ```
     *(Note: See `linux_deploy/requirements.txt` for a full list)*
 
@@ -87,6 +94,20 @@ The application can be configured via environment variables. See `app.py` for de
 | `MAX_CALLS` | `4` | Number of recent calls to keep in memory/display. |
 | `MEDIA_FOLDER` | `static/media` | Directory for display videos. |
 | `LOGS_FOLDER` | `logs` | Directory for CSV logs. |
+| `CSV_FILENAME` | `call_logs.csv` | Name of the CSV log file. |
+| `CORS_ORIGINS` | `*` | Allowed CORS origins for Socket.IO and API. |
+
+## 🔌 API Reference
+
+The system exposes several REST endpoints for integration:
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/call_number` | Call a number. Body: `{"number": "1001", "counter": "1"}` |
+| `GET` | `/api/current_state` | Get current calling info and history. |
+| `GET` | `/api/logs/recent` | Get JSON list of recent calls from CSV (Query: `?limit=10`). |
+| `GET` | `/api/logs/stats` | Get daily statistics. |
+| `GET` | `/api/media-list` | Get list of video files available for display. |
 
 ## 📦 Deployment
 

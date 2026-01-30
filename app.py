@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
 from threading import Lock
 import firebase_admin
-from firebase_admin import credentials, db
+from firebase_admin import credentials, db, messaging
 
 # --- Configuration ---
 @dataclass
@@ -290,31 +290,32 @@ def validate_call_data(data: Dict[str, Any]) -> tuple[Optional[str], Optional[st
     return number, counter, None
 
 def sync_to_cloud(number: str, counter: str) -> None:
-    """Sync the new number to Firebase Realtime Database."""
+    """Sync the new number and historical log to Firebase."""
     try:
-        # Structure: qms/locations/LOC_1/current
-        ref = db.reference('qms/locations/LOC_1/current')
         timestamp = datetime.now()
-        call_data = {
+        # 1. Update the 'Live' display for the main portal view
+        ref = db.reference('qms/locations/LOC_1/current')
+        ref.set({
             'number': number,
-            'counter': counter,
-            'timestamp': timestamp.isoformat()
-        }
-        ref.set(call_data)
-
-        # Structure: qms/locations/LOC_1/history/YYYY-MM-DD/NUMBER
-        date_str = timestamp.strftime('%Y-%m-%d')
-        history_ref = db.reference(f'qms/locations/LOC_1/history/{date_str}/{number}')
-        history_ref.set({
-            'time': timestamp.strftime('%H:%M:%S'),
             'counter': counter,
             'timestamp': timestamp.isoformat()
         })
 
-        logger.info(f"Synced to Firebase: {number} at {counter}")
+        # 2. Update today's history log so late patients can look up their number
+        date_str = timestamp.strftime('%Y-%m-%d')
+        # We use the number as the key so the web app can look it up instantly
+        history_ref = db.reference(f'qms/locations/LOC_1/history/{date_str}/{number}')
+        history_ref.set({
+            'time': timestamp.strftime('%H:%M:%S'),
+            'counter': counter,
+            'status': 'CALLED',
+            'timestamp': timestamp.isoformat()
+        })
+
+        logger.info(f"Successfully mirrored call {number} to Firebase")
     except Exception as e:
         logger.error(f"Failed to sync to Firebase: {e}")
-
+        
 def cleanup_old_firebase_data() -> None:
     """Delete history from previous days to save space."""
     try:
@@ -339,7 +340,52 @@ def cleanup_old_firebase_data() -> None:
     except Exception as e:
         logger.error(f"Error during Firebase cleanup: {e}")
 
+def send_push_notification(number: str, counter: str) -> None:
+    """Send FCM push notification to the specific device for this number."""
+    try:
+        # Look up the token in fcm_tokens/LOC_1/{number}
+        token_ref = db.reference(f'fcm_tokens/LOC_1/{number}')
+        token = token_ref.get()
+
+        if not token:
+            logger.info(f"No FCM token found for number {number}, skipping push.")
+            return
+
+        # Debugging: Log the token type and content
+        logger.info(f"Fetched token data for {number}: {token} (type: {type(token)})")
+
+        # Handle if token is a dictionary (common if stored with metadata)
+        if isinstance(token, dict):
+            token = token.get('token')
+            if not token:
+                logger.info(f"Token dictionary does not contain 'token' key for {number}.")
+                return
+        
+        # Ensure token is a string
+        if not isinstance(token, str) or not token.strip():
+             logger.warning(f"Invalid token format for {number}: {token}")
+             return
+
+        # Create the message
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title='Giliran Anda!',
+                body=f'Nombor {number} sila ke Kaunter {counter}',
+            ),
+            token=token,
+        )
+
+        # Send the message
+        response = messaging.send(message)
+        logger.info(f"Successfully sent push notification to {number}: {response}")
+
+    except Exception as e:
+        logger.error(f"Failed to send push notification: {e}")
+
 def update_and_broadcast_call(number: str, counter: str) -> None:
+    
+    
+    
     """
     Central function to handle a new call.
     Updates history, logs to CSV, and emits events to all clients.
@@ -351,6 +397,9 @@ def update_and_broadcast_call(number: str, counter: str) -> None:
         
         # Sync to Cloud
         sync_to_cloud(number, counter)
+        
+        # Send Push Notification
+        send_push_notification(number, counter)
         
         logger.info(f"Broadcasted call update: {number} at {counter}")
     except Exception as e:
