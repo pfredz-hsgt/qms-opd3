@@ -21,6 +21,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.firebase
 
 # Virtual Environment
 venv/
@@ -40,3 +41,4 @@ logs/
 archive/
 deploy/
 media/
+.firebase/hosting.cHVibGlj.cache

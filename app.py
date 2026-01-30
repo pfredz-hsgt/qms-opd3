@@ -315,6 +315,30 @@ def sync_to_cloud(number: str, counter: str) -> None:
     except Exception as e:
         logger.error(f"Failed to sync to Firebase: {e}")
 
+def cleanup_old_firebase_data() -> None:
+    """Delete history from previous days to save space."""
+    try:
+        ref = db.reference('qms/locations/LOC_1/history')
+        # Use shallow=True to get only keys (dates) without fetching all data
+        dates = ref.get(shallow=True)
+        
+        if not dates:
+            return
+
+        today = datetime.now().strftime('%Y-%m-%d')
+        deleted_count = 0
+
+        for date_str in dates:
+            if date_str < today:
+                ref.child(date_str).delete()
+                deleted_count += 1
+                
+        if deleted_count > 0:
+            logger.info(f"Cleaned up {deleted_count} old days of history from Firebase")
+            
+    except Exception as e:
+        logger.error(f"Error during Firebase cleanup: {e}")
+
 def update_and_broadcast_call(number: str, counter: str) -> None:
     """
     Central function to handle a new call.
@@ -602,6 +626,10 @@ if __name__ == "__main__":
     logger.info(f"  Staff Interface: http://{config.HOST}:{config.PORT}/")
     logger.info(f"  Display Page: http://{config.HOST}:{config.PORT}/display")
     logger.info(f"  Dashboard: http://{config.HOST}:{config.PORT}/dashboard")
+    
+    # Run cleanup on startup
+    cleanup_old_firebase_data()
+    
     socketio.run(
         app, 
         host=config.HOST, 

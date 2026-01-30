@@ -53,7 +53,7 @@ onValue(currentRef, (snapshot) => {
         currentNumberData = data;
         // Update UI
         currentNumEl.textContent = data.number;
-        currentCounterEl.textContent = `Counter ${data.counter}`;
+        currentCounterEl.textContent = `Kaunter ${data.counter}`;
 
         const date = new Date(data.timestamp);
         lastUpdatedEl.textContent = `Updated: ${date.toLocaleTimeString()}`;
