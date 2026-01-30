@@ -1,0 +1,21 @@
+{
+    "qms": {
+        "locations": {
+            "LOC_1": {
+                "current": {
+                    "number": "1005",
+                    "counter": "1",
+                    "timestamp": "2024-01-30T10:00:00"
+                }
+            }
+        }
+    },
+    "fcm_tokens": {
+        "LOC_1": {
+            "1005": {
+                "token": "KEY_FROM_BROWSER",
+                "timestamp": 1706580000000
+            }
+        }
+    }
+}

@@ -4,10 +4,13 @@ import csv
 import logging
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
+import flask
 from flask_socketio import SocketIO, emit
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
 from threading import Lock
+import firebase_admin
+from firebase_admin import credentials, db
 
 # --- Configuration ---
 @dataclass
@@ -31,6 +34,16 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# --- Firebase Setup ---
+try:
+    cred = credentials.Certificate('serviceAccountKey.json')
+    firebase_admin.initialize_app(cred, {
+        'databaseURL': 'https://qms-hybrid-default-rtdb.asia-southeast1.firebasedatabase.app'
+    })
+    logger.info("Firebase Admin initialized successfully")
+except Exception as e:
+    logger.error(f"Failed to initialize Firebase: {e}")
 
 # --- Data Models ---
 @dataclass
@@ -276,6 +289,32 @@ def validate_call_data(data: Dict[str, Any]) -> tuple[Optional[str], Optional[st
     
     return number, counter, None
 
+def sync_to_cloud(number: str, counter: str) -> None:
+    """Sync the new number to Firebase Realtime Database."""
+    try:
+        # Structure: qms/locations/LOC_1/current
+        ref = db.reference('qms/locations/LOC_1/current')
+        timestamp = datetime.now()
+        call_data = {
+            'number': number,
+            'counter': counter,
+            'timestamp': timestamp.isoformat()
+        }
+        ref.set(call_data)
+
+        # Structure: qms/locations/LOC_1/history/YYYY-MM-DD/NUMBER
+        date_str = timestamp.strftime('%Y-%m-%d')
+        history_ref = db.reference(f'qms/locations/LOC_1/history/{date_str}/{number}')
+        history_ref.set({
+            'time': timestamp.strftime('%H:%M:%S'),
+            'counter': counter,
+            'timestamp': timestamp.isoformat()
+        })
+
+        logger.info(f"Synced to Firebase: {number} at {counter}")
+    except Exception as e:
+        logger.error(f"Failed to sync to Firebase: {e}")
+
 def update_and_broadcast_call(number: str, counter: str) -> None:
     """
     Central function to handle a new call.
@@ -285,6 +324,10 @@ def update_and_broadcast_call(number: str, counter: str) -> None:
         call_manager.add_call(number, counter)
         current_state = call_manager.get_current_state()
         socketio.emit("current_state", current_state)
+        
+        # Sync to Cloud
+        sync_to_cloud(number, counter)
+        
         logger.info(f"Broadcasted call update: {number} at {counter}")
     except Exception as e:
         logger.error(f"Error updating and broadcasting call: {e}")
@@ -340,6 +383,23 @@ def display2():
 def dashboard():
     """Serve the dashboard page."""
     return render_template("dashboard.html")
+
+# --- Temporary Portal Hosting ---
+@app.route("/portal")
+def patient_portal():
+    """Serve the patient portal (public/index.html)."""
+    return flask.send_from_directory('public', 'index.html')
+
+@app.route("/public/<path:filename>")
+def public_files(filename):
+    """Serve static files for the portal (js, sw, etc)."""
+    return flask.send_from_directory('public', filename)
+
+@app.route("/firebase-messaging-sw.js")
+def service_worker():
+    """Serve service worker from public root."""
+    return flask.send_from_directory('public', 'firebase-messaging-sw.js')
+
 
 @app.route("/health")
 def health_check():
