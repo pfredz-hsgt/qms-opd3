@@ -372,6 +372,15 @@ def send_push_notification(number: str, counter: str) -> None:
                 title='Giliran Anda!',
                 body=f'Nombor {number} sila ke Kaunter {counter}',
             ),
+            webpush=messaging.WebpushConfig(
+                fcm_options=messaging.WebpushFCMOptions(
+                    link='https://qms-hybrid.firebaseapp.com'
+                ),
+                notification=messaging.WebpushNotification(
+                    tag='qms-notification', # This is the magic key to prevent duplicates
+                    renotify=True
+                )
+            ),
             token=token,
         )
 

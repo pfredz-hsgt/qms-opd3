@@ -224,8 +224,34 @@ function saveTokenToDatabase(token, ticket) {
 // --- Foreground Message Handling ---
 if (messaging) {
     onMessage(messaging, (payload) => {
-        console.log('Message received. ', payload);
-        const { title, body } = payload.notification;
-        notifyStatus.textContent = `${title}: ${body}`;
+        console.log('Message received in foreground: ', payload);
+
+        const notificationTitle = payload.notification?.title || 'Permintaan Baru';
+        const notificationOptions = {
+            body: payload.notification?.body || '',
+            tag: 'qms-notification',
+            renotify: true,
+            icon: '/icon.png',
+            vibrate: [200, 100, 200, 100, 200], // Vibrate pattern: vibrate, pause, vibrate...
+            requireInteraction: true // Keeps notification on screen until user interacts
+        };
+
+        // Use the Service Worker Registration to show the notification
+        // This is more reliable on Android than 'new Notification()'
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(registration => {
+                registration.showNotification(notificationTitle, notificationOptions);
+            }).catch(err => {
+                console.error('Error showing notification via SW:', err);
+                // Fallback
+                new Notification(notificationTitle, notificationOptions);
+            });
+        } else {
+            new Notification(notificationTitle, notificationOptions);
+        }
+
+        // Update the UI text
+        notifyStatus.textContent = `${notificationTitle}: ${notificationOptions.body}`;
+        notifyStatus.style.color = "blue";
     });
 }
