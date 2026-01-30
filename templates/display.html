@@ -494,6 +494,7 @@
             // --- 🌟 NEW: Function to play HLS.js stream ---
             function playHlsStream(url) {
                 console.log(`Loading HLS stream: ${url}`);
+                video.volume = 0.5;
                 // Autoplay is handled by the 'MANIFEST_PARSED' event listener
                 hls.loadSource(url);
             }
@@ -501,6 +502,7 @@
             // --- 🌟 NEW: Function to play native HLS stream (Safari) ---
             function playNativeHls(url) {
                 console.log(`Loading native HLS stream: ${url}`);
+                video.volume = 0.5;
                 video.src = url;
                 video.addEventListener('loadeddata', nativeAutoplay, { once: true });
             }
@@ -508,6 +510,7 @@
             // --- 🌟 NEW: Function to play the local media playlist ---
             function playLocalPlaylist() {
                 console.log("Starting local media playlist...");
+                video.volume = 0.2;
                 if (localMediaFiles.length === 0) {
                     alert("Local media list is empty or still loading. Please try again.");
                     return;
@@ -1238,8 +1241,15 @@
                 try {
                     if (videoPlayer) {
                         videoPlayer.muted = false; // Unmute the video
-                        videoPlayer.volume = 0.5;  // Set volume to 50%
-                        console.log('🔊 Video player unmuted and volume set to 50%');
+
+                        const channelSel = document.getElementById('channelSelect');
+                        if (channelSel && channelSel.value === 'local_media_playlist') {
+                            videoPlayer.volume = 0.3;
+                            console.log('🔊 Video player unmuted and volume set to 30% (Local Media)');
+                        } else {
+                            videoPlayer.volume = 0.5;
+                            console.log('🔊 Video player unmuted and volume set to 50%');
+                        }
                     }
                 } catch (e) {
                     console.error('Error unmuting video player:', e);

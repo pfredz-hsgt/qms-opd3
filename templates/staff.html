@@ -150,6 +150,10 @@
             touch-action: manipulation;
         }
 
+        .key-btn:hover {
+            background: var(--hover-yellow);
+        }
+
         .key-btn:active {
             transform: translateY(4px);
             box-shadow: none;
@@ -445,10 +449,10 @@
             <!-- Right Panel: Info & History -->
             <div class="col-lg-5">
                 <!-- Recent Calls -->
-                <div class="card-custom p-4 mb-4 h-100">
-                    <h5 class="fw-bold mb-3 border-bottom pb-2">🕒 Recent Calls</h5>
-                    <div id="recent-calls-list" class="d-flex flex-column gap-2"
-                        style="max-height: 400px; overflow-y: auto;">
+                <div class="card-custom p-4 mb-4 h-100 d-flex flex-column">
+                    <h5 class="fw-bold mb-3 border-bottom pb-2 flex-shrink-0">🕒 Recent Calls</h5>
+                    <div id="recent-calls-list" class="d-flex flex-column gap-2 flex-grow-1"
+                        style="overflow-y: auto; min-height: 0;">
                         <div class="text-center text-muted py-4 fst-italic">No calls yet this session</div>
                     </div>
                 </div>
@@ -552,11 +556,11 @@
 
                     // Visual feedback
                     const select = document.getElementById('counter-select');
-                    const originalBorder = select.style.borderColor;
+                    // const originalBorder = select.style.borderColor; // Removed capturing potentially wrong state
                     select.style.borderColor = '#38a169';
                     select.style.boxShadow = '0 0 0 0.25rem rgba(56, 161, 105, 0.25)';
                     setTimeout(() => {
-                        select.style.borderColor = originalBorder;
+                        select.style.borderColor = ''; // Reset to default
                         select.style.boxShadow = '';
                     }, 500);
                 }

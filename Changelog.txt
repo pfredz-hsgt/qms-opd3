@@ -1,5 +1,18 @@
-to-do list
-- OPD Depan Static IP - http://10.77.232.94:5000/
+- QMS Static IP - http://10.77.232.94:5000/
+
+++to do list
+	- log call number into supabase/firebase (support notification) (iQMS using angular/firebase)
+	- setup qr link to vercel app
+	- list down called number (with ability to search/input own number)
+	- notification support if number called
+	- add light/dark theme for mobile terminal
+	- add numpad mouse hover
+
+Version 3.1 (20260129)
+- Revamp whole UI
+- Updated dashboard design
+- Added export function
+- Fix local media volume to 0.3,  live tv retain at 0.5
 
 Version 3.0 (20260113)
 - Added Reset/Restart Server button in staff panel

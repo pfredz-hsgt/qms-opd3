@@ -267,18 +267,22 @@
 
         <!-- Filter Bar -->
         <div class="filter-bar d-flex flex-wrap gap-3 align-items-end">
-            <div class="flex-grow-1">
+            <div>
                 <label class="form-label text-muted small fw-bold text-uppercase">Date Filter</label>
-                <div class="input-group">
-                    <input type="date" id="date-filter" class="form-control">
-                    <button class="btn btn-outline-secondary" onclick="loadDataForDate()">Apply Filter</button>
-                </div>
+                <input type="date" id="date-filter" class="form-control" onchange="loadDataForDate()">
+            </div>
+            <div class="flex-grow-1">
+                <label class="form-label text-muted small fw-bold text-uppercase">Search Calling Number</label>
+                <input type="text" id="number-search" class="form-control" placeholder="Type to filter..."
+                    onkeyup="debouncedSearch()">
             </div>
             <div>
                 <button class="btn btn-outline-primary" onclick="loadTodayData()">Today's Data</button>
                 <button class="btn btn-outline-secondary" onclick="loadRecentData()">Show All Recent</button>
             </div>
         </div>
+
+
 
         <!-- Stats Cards -->
         <div class="row g-4 mb-4">
@@ -330,14 +334,16 @@
                     <h5 class="fw-bold mb-3">Call Volume Statistics</h5>
                     <canvas id="callsChart"></canvas>
                 </div>
-
+                <h4 id="selected-date-header" class="text-primary fw-bold mb-4"></h4>
                 <div class="table-custom">
                     <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
                         <h5 class="fw-bold mb-0">Detailed Call Logs</h5>
+
                         <span class="badge bg-light text-dark border" id="table-count-badge">0 records</span>
                     </div>
                     <div class="table-responsive" id="table-content">
                         <!-- Table injected via JS -->
+
                         <div class="text-center p-5 text-muted">
                             <div class="spinner-border text-primary mb-2" role="status"></div>
                             <p>Loading data...</p>
@@ -393,6 +399,9 @@
 
         async function loadRecentData() {
             document.getElementById('date-filter').value = '';
+            document.getElementById('number-search').value = ''; // Clear search
+            updateDateHeader('Recent Records (Last 500)');
+
             showLoading(true);
             try {
                 const response = await fetch('/api/logs/recent?limit=500');
@@ -408,25 +417,29 @@
 
         async function loadDataForDate() {
             const selectedDate = document.getElementById('date-filter').value;
+            // Clear search when changing date
+            document.getElementById('number-search').value = '';
+
             if (!selectedDate) return loadRecentData();
 
+            updateDateHeader(`Data for ${selectedDate}`);
             showLoading(true);
             try {
                 const response = await fetch(`/api/logs/date/${selectedDate}`);
                 const result = await response.json();
                 if (result.status === 'success') {
                     processData(result.data);
-
-                    // Also try to update chart with context if possible, 
-                    // for now just chart the current selection vs typical? 
-                    // Or we stick to the plan: "Today" vs "Last 5 Days" chart is separate.
-                    // Let's load the chart data separately to ensure it is always "Trend" based
                     updateChartWithHistory();
                 }
             } catch (error) {
                 console.error(error);
             }
             showLoading(false);
+        }
+
+        function updateDateHeader(text) {
+            const el = document.getElementById('selected-date-header');
+            if (el) el.textContent = text;
         }
 
         // Function to fetch last 5 days data for the chart
@@ -478,8 +491,10 @@
 
         // --- Processing & Rendering ---
 
-        function processData(data) {
-            currentData = data;
+        function processData(data, updateGlobals = true) {
+            if (updateGlobals) {
+                currentData = data;
+            }
             document.getElementById('filtered-total').textContent = data.length;
             document.getElementById('table-count-badge').textContent = `${data.length} records`;
 
@@ -618,6 +633,38 @@
                     .catch(err => showToast('Failed to restart', 'bg-danger'));
             }
         }
+
+        // --- Search & Debounce ---
+
+        let searchTimeout;
+
+        function debouncedSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const query = document.getElementById('number-search').value.trim().toLowerCase();
+                filterAndRender(query);
+            }, 300);
+        }
+
+        function filterAndRender(query) {
+            if (!query) {
+                // If query is empty, show all current data
+                processData(currentData, false); // false to skip resetting currentData
+                return;
+            }
+
+            const filtered = currentData.filter(row =>
+                (row.number && row.number.toString().toLowerCase().includes(query))
+            );
+
+            // Update UI with filtered subset
+            document.getElementById('filtered-total').textContent = filtered.length;
+            document.getElementById('table-count-badge').textContent = `${filtered.length} records (Filtered)`;
+            renderTable(filtered);
+            // Optionally update counter stats based on filtered view or keep global? Usually filtered view.
+            renderCounterStats(filtered);
+        }
+
     </script>
 </body>
 
