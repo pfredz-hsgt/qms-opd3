@@ -369,7 +369,7 @@ def send_push_notification(number: str, counter: str) -> None:
         # Create the message
         message = messaging.Message(
             notification=messaging.Notification(
-                title='Giliran Anda!',
+                title='Farmasi',
                 body=f'Nombor {number} sila ke Kaunter {counter}',
             ),
             webpush=messaging.WebpushConfig(

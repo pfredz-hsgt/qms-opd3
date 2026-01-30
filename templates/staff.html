@@ -21,14 +21,42 @@
             --accent-cyan: #00bcd4;
             --text-dark: #2c3e50;
             --off-white: #f8f9fa;
+
+            /* Semantic Colors (Themable) */
+            --bg-body: var(--off-white);
+            --bg-surface: #ffffff;
+            --text-main: var(--text-dark);
+            --border-color: #e2e8f0;
+            --key-bg: #ffffff;
+            --key-shadow: #e2e8f0;
+            --input-bg: #ffffff;
+        }
+
+        [data-theme="dark"] {
+            --primary-navy: #7986cb;
+            --secondary-blue: #5c6bc0;
+            --soft-blue: #37474f;
+            --hover-yellow: #455a64;
+            --accent-cyan: #4dd0e1;
+            --text-dark: #eceff1;
+            --off-white: #121212;
+
+            --bg-body: #121212;
+            --bg-surface: #1e1e1e;
+            --text-main: #eceff1;
+            --border-color: #333333;
+            --key-bg: #2d2d2d;
+            --key-shadow: #1a1a1a;
+            --input-bg: #2d2d2d;
         }
 
         body {
             font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--off-white);
-            color: var(--text-dark);
+            background-color: var(--bg-body);
+            color: var(--text-main);
             overflow-x: hidden;
             min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         /* Sidebar Styles */
@@ -84,6 +112,26 @@
             transition: all 0.3s;
         }
 
+        /* Sidebar Overlay */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            backdrop-filter: blur(2px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
         /* Responsive Mobile Layout */
         @media (max-width: 992px) {
             .sidebar {
@@ -92,6 +140,7 @@
 
             .sidebar.active {
                 margin-left: 0;
+                box-shadow: 5px 0 15px rgba(0, 0, 0, 0.3);
             }
 
             .main-content {
@@ -103,6 +152,21 @@
             .mobile-header {
                 display: flex !important;
             }
+
+            .sidebar-close-btn {
+                display: block !important;
+            }
+        }
+
+        .sidebar-close-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            padding: 0.5rem;
+            cursor: pointer;
+            margin-left: auto;
         }
 
         /* Keypad Styles */
@@ -112,8 +176,8 @@
         }
 
         .display-screen {
-            background-color: white;
-            border: 2px solid #e2e8f0;
+            background-color: var(--bg-surface);
+            border: 2px solid var(--border-color);
             border-radius: 15px;
             height: 80px;
             display: flex;
@@ -138,15 +202,15 @@
         }
 
         .key-btn {
-            background: white;
-            border: 1px solid #e2e8f0;
+            background: var(--key-bg);
+            border: 1px solid var(--border-color);
             border-radius: 12px;
             padding: 1.2rem;
             font-size: 1.5rem;
             font-weight: 600;
-            color: var(--text-dark);
+            color: var(--text-main);
             transition: all 0.15s;
-            box-shadow: 0 4px 0 #e2e8f0;
+            box-shadow: 0 4px 0 var(--key-shadow);
             touch-action: manipulation;
         }
 
@@ -175,7 +239,7 @@
 
         /* Recent Calls List */
         .recent-calls-card {
-            background: white;
+            background: var(--bg-surface);
             border-radius: 12px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
             height: 100%;
@@ -188,15 +252,43 @@
             margin-bottom: 8px;
             border-radius: 6px;
             transition: all 0.2s;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
         }
 
         .call-item:hover {
             background: var(--hover-yellow);
         }
 
+        .recall-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.85);
+            /* Consider dark mode equivalent? keeping simple for now */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            color: var(--secondary-blue);
+            font-weight: 600;
+            font-size: 1.1rem;
+            backdrop-filter: blur(2px);
+        }
+
+        .call-item:hover .recall-overlay {
+            opacity: 1;
+        }
+
         /* Utils */
         .card-custom {
-            background: white;
+            background: var(--bg-surface);
             border-radius: 12px;
             border: none;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
@@ -239,8 +331,17 @@
 
         .notification.success {
             background: linear-gradient(135deg, rgba(198, 246, 213, 0.95), rgba(154, 230, 180, 0.95));
-            border-color: rgba(104, 211, 145, 0.3);
             color: #22543d;
+        }
+
+        [data-theme="dark"] .form-floating>label {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        [data-theme="dark"] .form-floating>.form-control:focus~label,
+        [data-theme="dark"] .form-floating>.form-control:not(:placeholder-shown)~label,
+        [data-theme="dark"] .form-floating>.form-select~label {
+            color: rgba(255, 255, 255, 0.7);
         }
 
         .notification.info {
@@ -340,9 +441,16 @@
                 <path
                     d="M6.5 2a.5.5 0 0 0 0 1H1v2h5.5l7 7.5V11a.5.5 0 0 0 1 0v-4a.5.5 0 0 0 1 0V2h-9zM1 1v1h5.5L7 2.5V1a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1z" />
             </svg>
+            </svg>
             QMS OPD 3.0
         </div>
         <div class="sidebar-menu">
+            <!-- Theme Toggle -->
+            <button onclick="toggleTheme()" class="nav-link w-100 text-start border-0 bg-transparent">
+                <span id="theme-icon">🌙</span>
+                <span id="theme-text">Dark Mode</span>
+            </button>
+            <div class="border-bottom mx-3 mb-2 opacity-25"></div>
             <a href="/" class="nav-link active">
                 <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path
@@ -378,6 +486,9 @@
 
     <!-- Main Content -->
     <div class="main-content">
+        <!-- Sidebar Overlay -->
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
         <!-- CUSTOM NOTIFICATION CONTAINER -->
         <div class="notification-container">
             <div id="notification" class="notification">
@@ -387,7 +498,8 @@
         </div>
 
         <div class="d-flex justify-content-between align-items-center mb-4 mobile-header d-none">
-            <button class="btn btn-light shadow-sm" onclick="toggleSidebar()">
+            <button class="btn shadow-sm" onclick="toggleSidebar()"
+                style="background-color: var(--bg-surface); color: var(--text-main); border: 1px solid var(--border-color);">
                 ☰ Menu
             </button>
             <h5 class="fw-bold m-0 text-primary">QMS Terminal</h5>
@@ -415,7 +527,7 @@
                             <!-- Counter Selection -->
                             <div class="form-floating mb-4">
                                 <select class="form-select border-2" id="counter-select"
-                                    style="font-size: 1.1rem; font-weight: 600;">
+                                    style="font-size: 1.1rem; font-weight: 600; background-color: var(--input-bg); color: var(--text-main); border-color: var(--border-color);">
                                     <option value="1">Counter 1</option>
                                     <option value="2">Counter 2</option>
                                     <option value="3">Counter 3</option>
@@ -453,20 +565,22 @@
                     <h5 class="fw-bold mb-3 border-bottom pb-2 flex-shrink-0">🕒 Recent Calls</h5>
                     <div id="recent-calls-list" class="d-flex flex-column gap-2 flex-grow-1"
                         style="overflow-y: auto; min-height: 0;">
-                        <div class="text-center text-muted py-4 fst-italic">No calls yet this session</div>
+                        <div class="text-center py-4 fst-italic opacity-50">No calls yet this session</div>
                     </div>
                 </div>
             </div>
 
             <!-- Mobile Access QR (Footer style) -->
             <div class="col-12">
-                <div class="card-custom p-3 bg-light">
+                <div class="card-custom p-3" style="background-color: var(--soft-blue);">
                     <div class="row align-items-center">
                         <div class="col-md-12">
                             <h6 class="fw-bold text-dark">📱 Mobile Access</h6>
                             <p class="small text-muted mb-1">Scan to control from your phone. Ensure you are connected
                                 to Wi-Fi: <strong>Kualiti_Staf</strong> Password: <strong>2024@KualitiHS</strong> </p>
-                            <code class="small bg-white px-2 py-1 rounded border" id="server-url">Loading IP...</code>
+                            <code class="small px-2 py-1 rounded border"
+                                style="background: var(--bg-surface); color: var(--text-main);"
+                                id="server-url">Loading IP...</code>
                             <br />
                             <canvas id="qrcode" style="margin-top: 10px; max-width: 80px;"></canvas>
                         </div>
@@ -610,6 +724,9 @@
 
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
+            // Init Theme
+            initTheme();
+
             // Restore last selected counter
             const savedCounter = localStorage.getItem('lastCounter');
             if (savedCounter) {
@@ -627,6 +744,34 @@
 
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('sidebar-overlay').classList.toggle('active');
+        }
+
+        // --- Theme Management ---
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeUI(savedTheme);
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme') || 'light';
+            const next = current === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            updateThemeUI(next);
+        }
+
+        function updateThemeUI(theme) {
+            const icon = document.getElementById('theme-icon');
+            const text = document.getElementById('theme-text');
+            if (theme === 'dark') {
+                icon.textContent = '☀️';
+                text.textContent = 'Light Mode';
+            } else {
+                icon.textContent = '🌙';
+                text.textContent = 'Dark Mode';
+            }
         }
 
         // --- Keypad Functions ---
@@ -725,8 +870,26 @@
                     <span class="fw-bold fs-5">${number}</span>
                     <small class="d-block text-muted opacity-75">Kaunter ${counter}</small>
                 </div>
-                <span class="badge bg-white text-dark border">${time}</span>
+                <span class="badge text-dark border" style="background-color: var(--bg-surface); color: var(--text-main) !important;">${time}</span>
+                <div class="recall-overlay" style="color: var(--secondary-blue);">
+                    <span>↺ Recall</span>
+                </div>
             `;
+
+            // Add click to recall functionality
+            div.onclick = function () {
+                numberInput.value = number;
+                updateDisplay();
+                submitCall();
+
+                // Visual feedback on the display
+                const display = document.getElementById('number-display');
+                display.style.transition = 'background-color 0.1s';
+                display.style.backgroundColor = '#e8eaf6';
+                setTimeout(() => {
+                    display.style.backgroundColor = 'white';
+                }, 150);
+            };
 
             recentCallsContainer.prepend(div);
 
