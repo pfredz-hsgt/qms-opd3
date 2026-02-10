@@ -101,7 +101,55 @@
         #my-ticket:-ms-input-placeholder {
             opacity: 0.4;
         }
+
+        /* PWA Install Button & iOS Instructions */
+        #install-prompt {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            align-items: center;
+            gap: 10px;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        #ios-install-prompt {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            text-align: center;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translate(-50%, 100%);
+            }
+
+            to {
+                transform: translate(-50%, 0);
+            }
+        }
     </style>
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a237e">
 </head>
 
 <body>
@@ -147,6 +195,21 @@
             </button>
             <p id="notify-status" class="small text-center mt-2 text-muted"></p>
         </div>
+    </div>
+
+    <!-- PWA Install Prompt (Android/Desktop) -->
+    <div id="install-prompt">
+        <span class="fw-bold text-primary">Install App</span>
+        <button id="btn-install" class="btn btn-sm btn-primary rounded-pill px-3">Install</button>
+        <button id="btn-install-close" class="btn-close ms-2"></button>
+    </div>
+
+    <!-- iOS Install Instructions -->
+    <div id="ios-install-prompt">
+        <h6 class="fw-bold mb-2">Install for Better Experience</h6>
+        <p class="small text-muted mb-3">Tap <span class="fs-5">Share</span> (text/icon) below and select <strong>Add to
+                Home Screen</strong> <span class="fs-5">➕</span></p>
+        <button id="btn-close-ios" class="btn btn-light btn-sm w-100 rounded-pill">Close</button>
     </div>
 
     <!-- History Modal -->

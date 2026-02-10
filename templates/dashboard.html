@@ -509,6 +509,13 @@
                 return;
             }
 
+            // Sort data: Newest first (Date + Time)
+            data.sort((a, b) => {
+                const dateA = new Date(`${a.date} ${a.time}`);
+                const dateB = new Date(`${b.date} ${b.time}`);
+                return dateB - dateA;
+            });
+
             let html = `
                 <table class="table table-hover mb-0">
                     <thead class="table-light">

@@ -251,7 +251,76 @@ if (messaging) {
         }
 
         // Update the UI text
-        notifyStatus.textContent = `${notificationTitle}: ${notificationOptions.body}`;
         notifyStatus.style.color = "blue";
     });
 }
+
+// --- PWA Installation Logic ---
+let deferredPrompt;
+const installPrompt = document.getElementById('install-prompt');
+const installBtn = document.getElementById('btn-install');
+const installCloseBtn = document.getElementById('btn-install-close');
+const iosPrompt = document.getElementById('ios-install-prompt');
+const iosCloseBtn = document.getElementById('btn-close-ios');
+
+// 1. Android/Desktop Install Prompt
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the mini-infobar from appearing on mobile
+    e.preventDefault();
+    // Stash the event so it can be triggered later.
+    deferredPrompt = e;
+    // Update UI notify the user they can install the PWA
+    installPrompt.style.display = 'flex';
+});
+
+installBtn.addEventListener('click', async () => {
+    // Hide the app provided install promotion
+    installPrompt.style.display = 'none';
+    // Show the install prompt
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        // Wait for the user to respond to the prompt
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response to the install prompt: ${outcome}`);
+        // We've used the prompt, and can't use it again, throw it away
+        deferredPrompt = null;
+    }
+});
+
+installCloseBtn.addEventListener('click', () => {
+    installPrompt.style.display = 'none';
+});
+
+// 2. iOS Detection
+function isIOS() {
+    return [
+        'iPad Simulator',
+        'iPhone Simulator',
+        'iPod Simulator',
+        'iPad',
+        'iPhone',
+        'iPod'
+    ].includes(navigator.platform)
+        // iPad on iOS 13 detection
+        || (navigator.userAgent.includes("Mac") && "ontouchend" in document)
+}
+
+function isStandalone() {
+    return ('standalone' in navigator && navigator.standalone) || window.matchMedia('(display-mode: standalone)').matches;
+}
+
+if (isIOS() && !isStandalone()) {
+    // Show iOS install instructions
+    // You might want to show this only once per session or use localStorage to remember dismissal
+    if (!localStorage.getItem('iosInstallDismissed')) {
+        setTimeout(() => {
+            iosPrompt.style.display = 'block';
+        }, 2000);
+    }
+}
+
+iosCloseBtn.addEventListener('click', () => {
+    iosPrompt.style.display = 'none';
+    localStorage.setItem('iosInstallDismissed', 'true');
+});
+
