@@ -1,0 +1,94 @@
+# QMS Backend Linux Deployment Guide
+
+This guide details how to deploy the QMS Python backend on your Linux server. Because your displays and staff panels will run from Windows PCs, you **do not** need to copy or migrate any over any Windows-specific `.bat` or AutoHotkey (`.ahk`) scripts.
+
+## Will PM2 and Apache cause issues?
+**No, they will not cause issues, and PM2 is actually a huge advantage.**
+
+1.  **Port Conflicts:** Apache typically binds to port `80`/`443`, and your Node/Express apps likely use ports like `3000` or `8080`. Your QMS Flask app defaults to port `5000`. As long as port `5000` is open and not in use by your Express apps, they will run perfectly side-by-side. 
+2.  **Using PM2 Instead of Systemd:** While your `linux_deploy` folder contains a Systemd `qms.service` file, since you already have **PM2** installed, you can use it to manage your Python app! PM2 is fantastic at handling the exact `os._exit(1)` crash induced by your auto-updater and will reboot the server instantly, just like the `.bat` file did on Windows.
+
+---
+
+## Deployment Steps
+
+### Step 1: Clone the Repository
+To ensure your in-app `/api/perform_update` endpoint continues to work, you must use Git to clone the repository rather than manually copying files over FTP.
+
+```bash
+cd /var/www/  # Or your preferred hosting directory
+git clone https://github.com/pfredz-hsgt/qms-opd3.git qms-opd
+cd qms-opd
+```
+
+### Step 2: Ensure Required Configuration Exists
+Because `serviceAccountKey.json` is typically git-ignored for security, ensure you manually move it to the server.
+```bash
+# Upload serviceAccountKey.json to the qms-opd directory
+```
+Ensure the folder permissions allow your executing user (e.g., `ubuntu` or `root`) to create and write to the `logs` folder.
+```bash
+mkdir logs
+chmod 755 logs
+```
+
+### Step 3: Install Python Dependencies
+It is highly recommended to use a Python virtual environment to avoid conflicts with other system tools.
+```bash
+# Install venv if you haven't already: sudo apt install python3-venv
+
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install requirements
+pip install -r requirements.txt
+```
+
+### Step 4: Start the Server with PM2 (Recommended)
+You can instruct PM2 to run your Python script using the virtual environment you just created. PM2 will automatically handle keeping the app alive and restarting it when the "Check for Updates" button crashes it.
+
+```bash
+# Start the app and name it to be easily recognizable in 'pm2 list'
+pm2 start app.py --name "qms-opd" --interpreter ./venv/bin/python
+
+# Save the PM2 process list so it starts on server boot
+pm2 save
+```
+
+### Step 5 (Optional): Route via Apache
+If you want to access the QMS API or WebSocket via a domain name (like `qms.yourdomain.com`) instead of the IP address (e.g., `http://10.77.232.20:5000`), you can set up a reverse proxy using your existing Apache server. Ensure the proxy supports WebSockets (Socket.IO).
+
+Add something like this to your Apache configurations (`/etc/apache2/sites-available/qms.conf`):
+
+```apache
+<VirtualHost *:80>
+    ServerName qms.yourdomain.com
+
+    # Proxy WebSocket Traffic
+    RewriteEngine On
+    RewriteCond %{HTTP:Upgrade} websocket [NC]
+    RewriteRule /(.*) ws://127.0.0.1:5000/$1 [P,L]
+
+    # Proxy Standard HTTP Traffic
+    ProxyPass / http://127.0.0.1:5000/
+    ProxyPassReverse / http://127.0.0.1:5000/
+</VirtualHost>
+```
+
+*(Remember to run `sudo a2enmod proxy_wstunnel proxy_http rewrite` and `sudo systemctl restart apache2` if you implement this).*
+
+---
+
+## Client Adjustments (Windows PCs)
+Your Windows client machines running the displays will no longer need `1.Start-Server.bat` since the server is hosted elsewhere. 
+
+You must open the `2.LaunchDisplay.bat` and `3.LaunchPanel.bat` files on the Windows machines and **update the hardcoded IP address in those files** to point to your new Linux server's IP address or domain name.
+
+```bat
+:: Change this:
+"http://10.78.115.21:5000/display?kiosk=true"
+
+:: To your Linux Server IP or Domain Name:
+"http://<LINUX_SERVER_IP>:5000/display?kiosk=true"
+```
