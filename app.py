@@ -2,6 +2,7 @@ import os
 import sys
 import csv
 import logging
+import subprocess
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 import flask
@@ -589,6 +590,69 @@ def restart_server():
         return jsonify({
             "status": "error",
             "message": f"Failed to restart server: {str(e)}"
+        }), 500
+
+@app.route('/api/check_update', methods=['GET'])
+def check_update():
+    """Check if there are updates available on GitHub."""
+    try:
+        # Fetch the latest from origin main
+        subprocess.run(['git', 'fetch', 'origin', 'main'], check=True, capture_output=True)
+        
+        # Get local commit hash
+        local_result = subprocess.run(['git', 'rev-parse', 'HEAD'], check=True, capture_output=True, text=True)
+        local_hash = local_result.stdout.strip()
+        
+        # Get remote commit hash
+        remote_result = subprocess.run(['git', 'rev-parse', 'origin/main'], check=True, capture_output=True, text=True)
+        remote_hash = remote_result.stdout.strip()
+        
+        update_available = (local_hash != remote_hash)
+        
+        return jsonify({
+            "status": "success",
+            "update_available": update_available,
+            "local_hash": local_hash,
+            "remote_hash": remote_hash
+        })
+    except Exception as e:
+        logger.error(f"Error checking for updates: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"Failed to check for updates: {str(e)}"
+        }), 500
+
+@app.route('/api/perform_update', methods=['POST'])
+def perform_update():
+    """Perform a hard reset and pull the latest from GitHub, then restart."""
+    try:
+        logger.warning("Initiating auto-update...")
+        
+        # Fetch to be absolutely sure
+        subprocess.run(['git', 'fetch', 'origin', 'main'], check=True, capture_output=True)
+        # Hard reset and pull
+        subprocess.run(['git', 'reset', '--hard', 'origin/main'], check=True, capture_output=True)
+        subprocess.run(['git', 'pull', 'origin', 'main'], check=True, capture_output=True)
+        
+        # Schedule restart
+        def do_restart():
+            import time
+            time.sleep(1)
+            logger.warning("Restarting process post-update now...")
+            os._exit(1)
+            
+        from threading import Thread
+        Thread(target=do_restart).start()
+        
+        return jsonify({
+            "status": "success",
+            "message": "Update pulled successfully. Server restarting..."
+        })
+    except Exception as e:
+        logger.error(f"Error performing update: {e}")
+        return jsonify({
+            "status": "error",
+            "message": f"Failed to perform update: {str(e)}"
         }), 500
 
 @app.route('/api/active_notifications')

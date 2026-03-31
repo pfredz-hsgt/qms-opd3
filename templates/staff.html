@@ -471,6 +471,12 @@
                 </svg>
                 Open TV Display
             </a>
+            <a href="#" onclick="checkForUpdate()" class="nav-link">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Check for Update
+            </a>
         </div>
         <!-- Theme Toggle -->
         <div class="border-bottom mx-3 mb-2 opacity-25"></div>
@@ -924,8 +930,35 @@
             if (confirm("Are you sure you want to RESTART the server logic? Only do this if the display is stuck.")) {
                 fetch('/api/restart', { method: 'POST' })
                     .then(res => res.json())
-                    .then(data => showToast('Server restarting...', 'bg-danger'))
-                    .catch(err => showToast('Failed to restart', 'bg-danger'));
+                    .then(data => showNotification('Server restarting...', 'error', 0, false))
+                    .catch(err => showNotification('Failed to restart', 'error'));
+            }
+        }
+
+        async function checkForUpdate() {
+            showNotification('Checking for updates...', 'info', 0, false);
+            try {
+                const response = await fetch('/api/check_update');
+                const data = await response.json();
+                
+                if (data.update_available) {
+                    showNotification('Update found! Downloading and installing...', 'info', 0, false);
+                    const perfResp = await fetch('/api/perform_update', { method: 'POST' });
+                    const perfData = await perfResp.json();
+                    
+                    if (perfResp.ok && perfData.status === 'success') {
+                        showNotification('Update successful! Server restarting...', 'success', 0, false);
+                        setTimeout(() => {
+                            window.location.reload(true);
+                        }, 5000); 
+                    } else {
+                        showNotification('Update failed: ' + (perfData.message || 'Unknown error'), 'error');
+                    }
+                } else {
+                    showNotification('System is on the latest version.', 'success');
+                }
+            } catch (error) {
+                showNotification('Error checking for updates: ' + error.message, 'error');
             }
         }
     </script>
