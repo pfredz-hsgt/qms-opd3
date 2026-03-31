@@ -3,10 +3,16 @@
 ++to do list
 - nothing
 
+Version 3.2 (20260331)
+- Updated styling to match SeQue
+- Fixed audio bug when calling rapidly
+- Updated counter terminal to improve mobile compatibility
+
 Version 3.2 (20260130)
-- Added new firebase web tracker (https://qms-hybrid.firebaseapp.com/)
+- Added new firebase web tracker (https://qms-hybrid.web.app/)
 - Added support for notification (Android) - iOS pending testing
 - Patient can opt for notification when number called,  or view/search called numbers
+// Firebase Integration broken for now -- pending fix //
 
 Version 3.1 (20260129)
 - Revamp whole UI

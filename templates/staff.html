@@ -344,6 +344,7 @@
             color: rgba(255, 255, 255, 0.7);
         }
 
+
         .notification.info {
             background: linear-gradient(135deg, rgba(190, 227, 248, 0.95), rgba(147, 197, 253, 0.95));
             border-color: rgba(59, 130, 246, 0.3);
@@ -442,15 +443,10 @@
                     d="M6.5 2a.5.5 0 0 0 0 1H1v2h5.5l7 7.5V11a.5.5 0 0 0 1 0v-4a.5.5 0 0 0 1 0V2h-9zM1 1v1h5.5L7 2.5V1a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1z" />
             </svg>
             </svg>
-            QMS OPD 3.0
+            QMS OPD 3.3
         </div>
         <div class="sidebar-menu">
-            <!-- Theme Toggle -->
-            <button onclick="toggleTheme()" class="nav-link w-100 text-start border-0 bg-transparent">
-                <span id="theme-icon">🌙</span>
-                <span id="theme-text">Dark Mode</span>
-            </button>
-            <div class="border-bottom mx-3 mb-2 opacity-25"></div>
+
             <a href="/" class="nav-link active">
                 <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path
@@ -476,6 +472,12 @@
                 Open TV Display
             </a>
         </div>
+        <!-- Theme Toggle -->
+        <div class="border-bottom mx-3 mb-2 opacity-25"></div>
+        <button onclick="toggleTheme()" class="nav-link w-100 text-start border-0 bg-transparent">
+            <span id="theme-icon">🌙</span>
+            <span id="theme-text">Dark Mode</span>
+        </button>
 
         <div class="mt-auto p-3">
             <button class="btn btn-outline-light w-100 btn-sm opacity-50" onclick="confirmRestart()">
@@ -502,17 +504,17 @@
                 style="background-color: var(--bg-surface); color: var(--text-main); border: 1px solid var(--border-color);">
                 ☰ Menu
             </button>
-            <h5 class="fw-bold m-0 text-primary">QMS Terminal</h5>
+            <h5 class="fw-bold m-0 text-primary">QMS OPD 3.3</h5>
         </div>
 
         <div class="row g-4">
             <!-- Left Panel: Keypad & Input -->
             <div class="col-lg-7">
-                <div class="card-custom p-4 mb-4 h-100">
-                    <div class="text-center mb-3">
-                        <h4 class="fw-bold text-primary">Next Patient</h4>
-                        <p class="text-muted small">Enter ticket number to call</p>
-                    </div>
+                <div class="card-custom p-4 pb-1">
+                    <!--<div class="text-center mb-3">
+                        <h4 class="fw-bold text-primary">Nombor Panggilan</h4>
+                        <p class="text-muted small">Masukkan nombor panggilan seterusnya</p>
+                    </div>-->
 
                     <form id="call-form" onsubmit="return false;">
                         <div class="keypad-container">
@@ -522,19 +524,6 @@
                             <!-- Display -->
                             <div class="display-screen" id="number-display">
                                 <span class="placeholder-text">0000</span>
-                            </div>
-
-                            <!-- Counter Selection -->
-                            <div class="form-floating mb-4">
-                                <select class="form-select border-2" id="counter-select"
-                                    style="font-size: 1.1rem; font-weight: 600; background-color: var(--input-bg); color: var(--text-main); border-color: var(--border-color);">
-                                    <option value="1">Counter 1</option>
-                                    <option value="2">Counter 2</option>
-                                    <option value="3">Counter 3</option>
-                                    <option value="4">Counter 4</option>
-                                    <option value="5">Counter 5</option>
-                                </select>
-                                <label for="counter-select">Select Counter</label>
                             </div>
 
                             <!-- Keypad -->
@@ -553,6 +542,20 @@
                                 <button type="submit" class="key-btn btn-enter" id="submit-button"
                                     data-key="enter">Call</button>
                             </div>
+
+                            <!-- Counter Selection -->
+                            <div class="form-floating mb-4" style="margin-top: 24px;"">
+                                <select class=" form-select border-2" id="counter-select"
+                                style="font-size: 1.1rem; font-weight: 600; background-color: var(--input-bg); color: var(--text-main); border-color: var(--border-color); padding-top: .625rem; text-align: center; font-size: 1.6rem;">
+                                <option value="1">Kaunter 1</option>
+                                <option value="2">Kaunter 2</option>
+                                <option value="3">Kaunter 3</option>
+                                <option value="4">Kaunter 4</option>
+                                <option value="5">Kaunter 5</option>
+                                </select>
+                                <!-- Counter Selection Label <label for="counter-select">Select Counter</label>  -->
+                            </div>
+
                         </div>
                     </form>
                 </div>

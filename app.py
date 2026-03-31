@@ -340,6 +340,15 @@ def cleanup_old_firebase_data() -> None:
     except Exception as e:
         logger.error(f"Error during Firebase cleanup: {e}")
 
+def cleanup_stale_tokens():
+    """Wipe all registered tokens to start fresh for the day."""
+    try:
+        db.reference('fcm_tokens/LOC_1').delete()
+        logger.info("All old notification tokens have been cleared for the new day.")
+    except Exception as e:
+        logger.error(f"Failed to clear tokens: {e}")
+
+
 def send_push_notification(number: str, counter: str) -> None:
     """Send FCM push notification to the specific device for this number."""
     try:
@@ -582,6 +591,22 @@ def restart_server():
             "message": f"Failed to restart server: {str(e)}"
         }), 500
 
+@app.route('/api/active_notifications')
+def get_active_notifications():
+    try:
+        # Fetch all registered tokens for today
+        ref = db.reference('fcm_tokens/LOC_1')
+        tokens_data = ref.get()
+        
+        if not tokens_data:
+            return jsonify([])
+
+        # Return just the ticket numbers that have active tokens
+        active_tickets = list(tokens_data.keys())
+        return jsonify(active_tickets)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # --- CSV Logging API Endpoints ---
 @app.route('/api/logs/recent')
 def get_recent_logs():
@@ -687,10 +712,11 @@ if __name__ == "__main__":
     
     # Run cleanup on startup
     cleanup_old_firebase_data()
-    
+    cleanup_stale_tokens()
     socketio.run(
         app, 
         host=config.HOST, 
         port=config.PORT, 
         debug=config.DEBUG
     )
+    

@@ -234,6 +234,7 @@
                 Open TV Display
             </a>
         </div>
+                    <div class="border-bottom mx-3 mb-2 opacity-25"></div>
         <div class="mt-auto p-3">
             <button class="btn btn-outline-light w-100 btn-sm opacity-50" onclick="confirmRestart()">
                 ⚠️ Restart Server
@@ -290,7 +291,7 @@
                 <div class="stat-card p-4">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <p class="text-muted mb-1">Calls Today</p>
+                            <p class="text-muted mb-1">Calls Today (<span id="todayDate"></span>)</p>
                             <h2 class="fw-bold mb-0" id="today-total">-</h2>
                         </div>
                         <div class="icon-box bg-soft-blue">
@@ -371,6 +372,17 @@
     <script src="/static/vendor/sheetjs/xlsx.full.min.js"></script>
 
     <script>
+    
+const today = new Date();
+
+const day = String(today.getDate()).padStart(2, '0');
+const month = String(today.getMonth() + 1).padStart(2, '0');
+const year = today.getFullYear();
+
+const formattedDate = `${day}/${month}/${year}`;
+
+document.getElementById("todayDate").textContent = formattedDate;
+
         // State
         let currentData = [];
         let myChart = null;
