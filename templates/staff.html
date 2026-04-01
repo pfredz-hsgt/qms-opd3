@@ -710,7 +710,8 @@
                 submitCall();
             }
             else if (event.key === "Escape") {
-                // Dismiss anything if needed
+                numberInput.value = '';
+                updateDisplay();
             }
             else if (event.key === '+') {
                 event.preventDefault();
