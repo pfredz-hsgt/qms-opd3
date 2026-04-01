@@ -33,8 +33,8 @@
         }
 
         [data-theme="dark"] {
-            --primary-navy: #1a237e;
-            --secondary-blue: #0d47a1;
+            --primary-navy: #080e45;
+            --secondary-blue: #001535;
             --soft-blue: #37474f;
             --hover-yellow: #455a64;
             --accent-cyan: #4dd0e1;
@@ -199,7 +199,24 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 12px;
+            /* Add these two lines for the animation */
+            transition: opacity 0.15s ease-in-out, transform 0.15s ease-in-out;
+            transform-origin: center;
         }
+
+        /* Keypad Layout Ordering */
+        .keypad-grid.layout-desktop [data-key="7"] { order: 1; }
+        .keypad-grid.layout-desktop [data-key="8"] { order: 2; }
+        .keypad-grid.layout-desktop [data-key="9"] { order: 3; }
+        .keypad-grid.layout-desktop [data-key="4"] { order: 4; }
+        .keypad-grid.layout-desktop [data-key="5"] { order: 5; }
+        .keypad-grid.layout-desktop [data-key="6"] { order: 6; }
+        .keypad-grid.layout-desktop [data-key="1"] { order: 7; }
+        .keypad-grid.layout-desktop [data-key="2"] { order: 8; }
+        .keypad-grid.layout-desktop [data-key="3"] { order: 9; }
+        .keypad-grid.layout-desktop [data-key="clear"] { order: 10; }
+        .keypad-grid.layout-desktop [data-key="0"] { order: 11; }
+        .keypad-grid.layout-desktop [data-key="enter"] { order: 12; }
 
         .key-btn {
             background: var(--key-bg);
@@ -250,6 +267,23 @@
             box-shadow: 0 4px 0 #1a237e;
         }
         
+        /* --- Light Theme Hover Effects --- */
+        .key-btn.btn-action:hover {
+            background-color: #fcd5d5; /* Slightly darker/richer red */
+        }
+
+        .key-btn.btn-enter:hover {
+            background: linear-gradient(135deg, #1565c0 0%, #283593 100%); /* Slightly brighter blue gradient */
+        }
+
+        /* --- Dark Theme Hover Effects --- */
+        [data-theme="dark"] .key-btn.btn-action:hover {
+            background-color: #5c2323; /* Slightly lighter dark-red */
+        }
+
+        [data-theme="dark"] .key-btn.btn-enter:hover {
+            background: linear-gradient(135deg, #121c4d 0%, #2d366e 100%); /* Slightly brighter dark-blue gradient */
+        }
         
         [data-theme="dark"] .display-screen.empty-state .text-muted,
         [data-theme="dark"] .display-screen .placeholder-text {
@@ -543,11 +577,20 @@
                     </div>-->
 
                     <form id="call-form" onsubmit="return false;">
-                        <div class="keypad-container">
-                            <!-- Helper Input (Hidden) -->
+                    <div class="keypad-container">
                             <input type="hidden" id="number-input-keypad" maxlength="5">
 
-                            <!-- Display -->
+                            <div class="d-flex justify-content-end mb-2">
+                                <button type="button" class="btn btn-sm border-0 d-flex align-items-center gap-1" 
+                                    onclick="toggleKeypadLayout()" 
+                                    style="font-color: var(--text-main); background-color: var(--soft-blue); font-size: 0.85rem; border-radius: 20px;">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                                    </svg>
+                                    Swap
+                                </button>
+                            </div>
+
                             <div class="display-screen" id="number-display">
                                 <span class="placeholder-text">0000</span>
                             </div>
@@ -752,10 +795,73 @@
             }
         });
 
+// --- Keypad Layout Management ---
+        let currentBreakpointIsDesktop = window.innerWidth >= 992;
+
+        function applyLayout(layoutType) {
+            const grid = document.querySelector('.keypad-grid');
+            const isCurrentlyDesktop = grid.classList.contains('layout-desktop');
+            
+            // Prevent animating if the layout is already correct
+            if ((layoutType === 'desktop') === isCurrentlyDesktop) return;
+
+            // 1. Fade out and shrink slightly
+            grid.style.opacity = '0';
+            grid.style.transform = 'scale(0.97)';
+            
+            // 2. Wait for fade out, swap layout, then fade back in
+            setTimeout(() => {
+                if (layoutType === 'desktop') {
+                    grid.classList.add('layout-desktop');
+                } else {
+                    grid.classList.remove('layout-desktop');
+                }
+                
+                // Fade back in
+                grid.style.opacity = '1';
+                grid.style.transform = 'scale(1)';
+            }, 150); // This 150ms matches the CSS transition time
+        }
+
+        function toggleKeypadLayout() {
+            const grid = document.querySelector('.keypad-grid');
+            const newLayout = grid.classList.contains('layout-desktop') ? 'mobile' : 'desktop';
+            
+            // Save manual override preference
+            localStorage.setItem('keypadLayoutOverride', newLayout);
+            applyLayout(newLayout);
+        }
+
+        function initKeypadLayout() {
+            const savedLayout = localStorage.getItem('keypadLayoutOverride');
+            if (savedLayout) {
+                applyLayout(savedLayout);
+            } else {
+                applyLayout(window.innerWidth >= 992 ? 'desktop' : 'mobile');
+            }
+        }
+
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             // Init Theme
             initTheme();
+
+            // Init Layout Default
+            initKeypadLayout();
+
+            // Listen for screen resizing to auto-swap
+            window.addEventListener('resize', () => {
+                const newBreakpointIsDesktop = window.innerWidth >= 992;
+                
+                // Only trigger if we cross the mobile/desktop threshold (992px)
+                if (newBreakpointIsDesktop !== currentBreakpointIsDesktop) {
+                    currentBreakpointIsDesktop = newBreakpointIsDesktop;
+                    
+                    // Clear the manual override so it resets to the new device's default
+                    localStorage.removeItem('keypadLayoutOverride'); 
+                    applyLayout(currentBreakpointIsDesktop ? 'desktop' : 'mobile');
+                }
+            });
 
             // Restore last selected counter
             const savedCounter = localStorage.getItem('lastCounter');
