@@ -911,7 +911,7 @@
         function generateQRCode() {
             const ip = location.hostname;
             const port = location.port;
-            const url = `${location.protocol}//${ip}:${port}`;
+            const url = `${location.protocol}//${ip}/qms`;
 
             document.getElementById('server-url').textContent = url;
 
