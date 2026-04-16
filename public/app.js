@@ -34,21 +34,27 @@ const fullHistoryListEl = document.getElementById('full-history-list');
 const myTicketInput = document.getElementById('my-ticket');
 const notifyBtn = document.getElementById('btn-enable-notify');
 const notifyStatus = document.getElementById('notify-status');
+const statusBadge = document.getElementById('status-badge');
 
 // --- Real-time Updates ---
 const locationId = 'LOC_1'; // Hardcoded for this demo
 const currentRef = ref(db, `qms/locations/${locationId}/current`);
 
 // Calculate today's date string for history path (YYYY-MM-DD)
-// Note: This relies on client time, ideally should match server timezone
 const todayStr = new Date().toISOString().split('T')[0];
 const historyRef = ref(db, `qms/locations/${locationId}/history/${todayStr}`);
+
+console.log(`Checking Firebase path for current: qms/locations/${locationId}/current`);
+console.log(`Checking Firebase path for history: qms/locations/${locationId}/history/${todayStr}`);
 
 let currentNumberData = null;
 let historyData = {};
 
+// Listener for the CURRENT number
 onValue(currentRef, (snapshot) => {
     const data = snapshot.val();
+    console.log("Firebase 'Current' Snapshot:", data); // DEBUG LOG
+
     if (data) {
         currentNumberData = data;
         // Update UI
@@ -60,17 +66,29 @@ onValue(currentRef, (snapshot) => {
 
         // Check against user ticket
         checkIfMyTurn();
+    } else {
+        console.warn("Connected to 'current', but the data is completely empty (null). Check your database path!");
     }
+}, (error) => {
+    console.error("Firebase read error on 'current' path:", error); // CATCH PERMISSION ERRORS
 });
 
+// Listener for the HISTORY
 onValue(historyRef, (snapshot) => {
     const data = snapshot.val();
+    console.log("Firebase 'History' Snapshot:", data); // DEBUG LOG
+
     if (data) {
         historyData = data;
         updateHistoryUI(data);
         checkIfMyTurn(); // Re-check in case user entered ticket after history load
+    } else {
+        console.warn("Connected to 'history', but the data is completely empty (null) for today.");
     }
+}, (error) => {
+    console.error("Firebase read error on 'history' path:", error); // CATCH PERMISSION ERRORS
 });
+
 
 function updateHistoryUI(data) {
     // Convert object to array and sort by time (newest first)
@@ -146,6 +164,51 @@ function checkIfMyTurn() {
     notifyStatus.style.color = "gray";
     notifyStatus.style.fontWeight = "normal";
 }
+
+// --- Office Hours Logic ---
+function updateOfficeStatus() {
+    // 1. Get the current time locked to Malaysia Timezone (Asia/Kuala_Lumpur)
+    const options = { timeZone: 'Asia/Kuala_Lumpur', hour: 'numeric', minute: 'numeric', hour12: false };
+    const formatter = new Intl.DateTimeFormat('en-US', options);
+    const parts = formatter.formatToParts(new Date());
+
+    let hour = parseInt(parts.find(p => p.type === 'hour').value);
+    let minute = parseInt(parts.find(p => p.type === 'minute').value);
+
+    // Fix midnight 24h format quirk
+    if (hour === 24) hour = 0;
+
+    // Convert time to a decimal for easy math (e.g., 7:30 AM = 7.5, 5:30 PM = 17.5)
+    const timeInHours = hour + (minute / 60);
+
+    // 2. Check if the current time is between 7.5 (7:30 AM) and 17.5 (5:30 PM)
+    const isOfficeHour = timeInHours >= 7.5 && timeInHours < 17.5;
+
+    // 3. Update the UI based on the time
+    if (isOfficeHour) {
+        statusBadge.textContent = "● LIVE";
+        statusBadge.style.backgroundColor = "#e8f5e9"; // Light green
+        statusBadge.style.color = "#2e7d32"; // Dark green
+        return true;
+    } else {
+        statusBadge.textContent = "● OFFLINE";
+        statusBadge.style.backgroundColor = "#ffebee"; // Light red
+        statusBadge.style.color = "#c62828"; // Dark red
+
+        // Reset the displays to blank/0
+        currentNumEl.textContent = "--";
+        currentCounterEl.textContent = "Kaunter Ditutup";
+        recentCallsPreviewEl.innerHTML = '<span class="text-muted small fst-italic">Tiada panggilan terkini</span>';
+        lastUpdatedEl.textContent = "Waktu Operasi: Isnin-Jumaat (8:00 AM - 5:00 PM)";
+        return false;
+    }
+}
+
+// Run the check immediately when the page loads
+updateOfficeStatus();
+
+// Run the check again every 5 minutes (300000 milliseconds)
+setInterval(updateOfficeStatus, 300000);
 
 // --- Notifications (FCM) ---
 // Hook input change to re-check status

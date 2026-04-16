@@ -683,6 +683,7 @@
 
         // --- Original App State ---
         let lastProcessedTimestamp = null;
+        let isFirstPayload = true;
         let isPlayingAudio = false;
         let audioEnabled = false;
         let hasUserInteracted = false;
@@ -1036,6 +1037,7 @@
             socket = io();
 
             socket.on("connect", () => {
+                isFirstPayload = true;
                 updateConnectionStatus('connected', 'Connected');
             });
 
@@ -1048,6 +1050,7 @@
             });
 
             socket.on("reconnect", (attemptNumber) => {
+                isFirstPayload = true;
                 updateConnectionStatus('connected', 'Reconnected');
             });
 
@@ -1058,18 +1061,20 @@
             socket.on("current_state", (data) => {
                 const currentCall = data.current;
 
-                if (!currentCall || !currentCall.number) {
-                    updateDisplay('----', '-', false);
+                if (isFirstPayload) {
+                    isFirstPayload = false;
+                    if (currentCall && currentCall.number) {
+                        lastProcessedTimestamp = currentCall.timestamp;
+                        updateDisplay(currentCall.number, currentCall.counter, false);
+                    } else {
+                        updateDisplay('----', '-', false);
+                    }
                     updateHistory(data.history || []);
                     return;
                 }
 
-                if (lastProcessedTimestamp === null) {
-                    // Initial connection or first payload after reset
-                    lastProcessedTimestamp = currentCall.timestamp;
-                    updateDisplay(currentCall.number, currentCall.counter, false);
-                    updateHistory(data.history || []);
-                    return;
+                if (!currentCall || !currentCall.number) {
+                    return; // Ignore empty live payloads
                 }
 
                 if (currentCall.timestamp !== lastProcessedTimestamp) {
